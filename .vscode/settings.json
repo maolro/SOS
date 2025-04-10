@@ -1,0 +1,6 @@
+{
+    "java.project.sourcePaths": [
+        "ejemplo",
+        "practica/src/main/java/com/practica"
+    ]
+}

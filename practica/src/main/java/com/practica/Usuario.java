@@ -31,10 +31,6 @@ public class Usuario {
 
     public String getMatricula() { return matricula; }
 
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
-    }
-
     public String getFechaNacimiento() { return fechaNacimiento; }
 
     public void setFechaNacimiento(String fechaNacimiento) {

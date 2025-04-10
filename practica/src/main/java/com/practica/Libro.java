@@ -12,7 +12,7 @@ public class Libro {
     public Libro() { }
 
     public Libro(String titulo, String autor, String edicion, 
-                String ISBN, String editorial, boolean disponible) {
+        String ISBN, String editorial, boolean disponible) {
         this.titulo = titulo;
         this.autor = autor;
         this.edicion = edicion;

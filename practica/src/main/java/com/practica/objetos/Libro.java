@@ -2,6 +2,8 @@ package com.practica.objetos;
 
 import org.springframework.hateoas.RepresentationModel;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
@@ -22,7 +24,7 @@ public class Libro extends RepresentationModel<Libro> {
     private String edicion;
 
     @NotBlank(message = "El ISBN es obligatorio.")
-    private String ISBN;
+    private String isbn;
 
     private String editorial;
 
@@ -31,11 +33,11 @@ public class Libro extends RepresentationModel<Libro> {
     public Libro() {}
 
     public Libro(String titulo, String autor, String edicion, 
-    String ISBN, String editorial, boolean disponible) {
+    String isbn, String editorial, boolean disponible) {
         this.titulo = titulo;
         this.autor = autor;
         this.edicion = edicion;
-        this.ISBN = ISBN;
+        this.isbn = isbn;
         this.editorial = editorial;
         this.disponible = disponible;
     }
@@ -56,9 +58,9 @@ public class Libro extends RepresentationModel<Libro> {
 
     public void setEdicion(String edicion) { this.edicion = edicion; }
 
-    public String getISBN() { return ISBN; }
+    public String getISBN() { return isbn; }
 
-    public void setISBN(String ISBN) { this.ISBN = ISBN; }
+    public void setISBN(String isbn) { this.isbn = isbn; }
 
     public String getEditorial() { return editorial; }
 

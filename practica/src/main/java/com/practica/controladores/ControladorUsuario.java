@@ -2,6 +2,7 @@ package com.practica.controladores;
 
 import org.springframework.web.bind.annotation.*;
 
+import com.practica.assembler.EnsambladorLibro;
 import com.practica.assembler.EnsambladorUsuario;
 import com.practica.objetos.*;
 import com.practica.servicios.*;
@@ -12,12 +13,15 @@ import com.practica.repositorios.*;
 
 //Paginación
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.web.PagedResourcesAssembler;
 //Hateoas
 import org.springframework.hateoas.PagedModel;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -32,17 +36,30 @@ import org.springframework.validation.BindingResult;
 public class ControladorUsuario {
     private ServicioUsuario userService;
     private PagedResourcesAssembler<Usuario> pagedResourcesAssembler;
+    private PagedResourcesAssembler<Libro> pagedResourcesAssemblerLibro;
+    private PagedResourcesAssembler<Prestamo> pagedResourcesAssemblerPrestamo;
     private EnsambladorUsuario ensambladorUsuario;
+    private EnsambladorLibro ensambladorLibro;
     private RepositorioUsuario repositorioUsuario;
+    private RepositorioPrestamo repositorioPrestamo;
+    private RepositorioLibro repositorioLibro;
 
     public ControladorUsuario(ServicioUsuario userService, 
     RepositorioUsuario repositorioUsuario,
     PagedResourcesAssembler<Usuario> pagedResourcesAssembler,
-    EnsambladorUsuario ensambladorUsuario) {
+    PagedResourcesAssembler<Libro> pagedResourcesAssemblerLibro,
+    PagedResourcesAssembler<Prestamo> pagedResourcesAssemblerPrestamo,
+    EnsambladorUsuario ensambladorUsuario,
+    RepositorioPrestamo repositorioPrestamo,
+    RepositorioLibro repositorioLibro) {
+
         this.userService = userService;
         this.repositorioUsuario = repositorioUsuario;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
+        this.pagedResourcesAssemblerLibro = pagedResourcesAssemblerLibro;
+        this.pagedResourcesAssemblerPrestamo = pagedResourcesAssemblerPrestamo;
         this.ensambladorUsuario = ensambladorUsuario;
+        this.repositorioLibro = repositorioLibro;
     }
 
     @GetMapping(value = "", produces = { "application/json", "application/xml" })
@@ -101,5 +118,26 @@ public class ControladorUsuario {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno del servidor"));
         }
+    }
+
+    @GetMapping("/{id}/libros")
+    public ResponseEntity<?> historicoLibrosUsuario(@PathVariable Long id,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size){
+
+        List<Prestamo> prestamos = repositorioPrestamo.findByUsuarioId(id);
+
+        if (prestamos.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("mensaje", "No se encontraron préstamos para el usuario con ID " + id));
+        }
+        List<Long> libroIds = prestamos.stream().map(Prestamo::getLibroId).toList();
+        List<Libro> libros = repositorioLibro.findAllById(libroIds);
+
+        int start = Math.min(page * size, libros.size());
+        int end = Math.min(start + size, libros.size());
+        Page<Libro> pagina = new PageImpl<>(libros.subList(start, end), PageRequest.of(page, size), libros.size());
+
+        return ResponseEntity.ok(pagedResourcesAssemblerLibro.toModel(pagina, ensambladorLibro));
     }
 }

@@ -1,5 +1,26 @@
 package com.practica.assembler;
 
-public class EnsambladorPrestamo {
-    
+import com.practica.controladores.ControladorPrestamo;
+import com.practica.objetos.Prestamo;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
+import org.springframework.stereotype.Component;
+
+@Component
+public class EnsambladorPrestamo extends RepresentationModelAssemblerSupport<Prestamo, Prestamo> {
+
+    public EnsambladorPrestamo() {
+        super(ControladorPrestamo.class, Prestamo.class);
+    }
+
+    @Override
+    public Prestamo toModel(Prestamo entity) {
+        entity.add(linkTo(methodOn(ControladorPrestamo.class)
+            .obtenerPrestamoPorId(entity.getId())).withSelfRel());
+        
+        return entity;
+    }
 }

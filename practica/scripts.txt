@@ -1,0 +1,9 @@
+1. Limpiar y empaquetar la aplicación:
+
+mvn clean package
+
+2. Arrancar la aplicación
+
+mvn spring-boot:run
+
+3. Abrir Postman

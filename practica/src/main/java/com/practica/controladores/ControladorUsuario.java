@@ -60,6 +60,7 @@ public class ControladorUsuario {
         this.pagedResourcesAssemblerPrestamo = pagedResourcesAssemblerPrestamo;
         this.ensambladorUsuario = ensambladorUsuario;
         this.repositorioLibro = repositorioLibro;
+        this.repositorioPrestamo = repositorioPrestamo;
     }
 
     @GetMapping(value = "", produces = { "application/json", "application/xml" })

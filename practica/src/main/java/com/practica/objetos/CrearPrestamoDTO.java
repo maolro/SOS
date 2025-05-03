@@ -1,5 +1,8 @@
 package com.practica.objetos;
 
+import java.time.LocalDate;
+import java.util.Date;
+
 import jakarta.validation.constraints.NotNull;
 
 public class CrearPrestamoDTO {
@@ -8,6 +11,9 @@ public class CrearPrestamoDTO {
 
     @NotNull
     private Long libro_id;
+
+    @NotNull
+    private Date fechaPrestamo;
 
     public Long getUsuario_id() {
         return usuario_id;
@@ -23,5 +29,12 @@ public class CrearPrestamoDTO {
 
     public void setLibro_id(Long libro_id) {
         this.libro_id = libro_id;
+    }
+    public Date getFechaPrestamo() {
+        return fechaPrestamo;
+    }
+
+    public void setFechaPrestamo(Date fechaPrestamo) {
+        this.fechaPrestamo = fechaPrestamo;
     }
 }

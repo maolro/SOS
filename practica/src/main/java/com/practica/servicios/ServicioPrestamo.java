@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.practica.objetos.*;
 import com.practica.repositorios.*;
@@ -39,9 +41,14 @@ public class ServicioPrestamo {
     public Prestamo crearPrestamo(CrearPrestamoDTO prestamoDTO) {
         Prestamo prestamo = new Prestamo();
         //Actualizar los campos del préstamo a los ids proporcionados
-        prestamo.setUsuarioId(prestamoDTO.getUsuario_id());
-        prestamo.setLibro(prestamoDTO.getLibro_id());
-        prestamo.setFechaPrestamo(new Date());
+        Usuario usuario = repositorioUsuario.findById(prestamoDTO.getUsuario_id())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        Libro libro = repositorioLibro.findById(prestamoDTO.getLibro_id())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Libro no encontrado"));
+        // Si ambas claves foráneas existen entonces se asignan
+        prestamo.setUsuario(usuario);
+        prestamo.setLibro(libro);
+        prestamo.setFechaPrestamo(prestamoDTO.getFechaPrestamo());
         // Calcula la fecha de devolución prevista si no se ha establecido
         if (prestamo.getFechaDevolucionPrevista() == null && prestamo.getFechaPrestamo() != null) {
             Calendar cal = Calendar.getInstance();
@@ -61,8 +68,8 @@ public class ServicioPrestamo {
         base.setFechaDevolucionReal(actualizado.getFechaDevolucionReal());
         base.setAmpliado(actualizado.isAmpliado());
         base.setSancion(actualizado.getSancion());
-        base.setLibro(actualizado.getLibroId());
-        base.setUsuarioId(actualizado.getUsuarioId());
+        base.setLibro(actualizado.getLibro());
+        base.setUsuario(actualizado.getUsuario());
 
         return repositorio.save(base);
     }

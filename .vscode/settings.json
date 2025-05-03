@@ -1,8 +1,10 @@
 {
     "java.project.sourcePaths": [
         "ejemplo",
-        "practica/src/main/java/com/practica"
+        "practica/src/main/java/com/practica",
+        "cliente\\src\\main\\java\\com\\client"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.project.referencedLibraries": []
 }

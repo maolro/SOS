@@ -18,18 +18,20 @@ public class Prestamo extends RepresentationModel<Prestamo> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "El id del usuario es obligatorio.")
-    private Long usuarioId;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id")
+    private Usuario usuario;
 
-    @NotNull(message = "El id del usuario es obligatorio.")
-    private Long libroId;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "libro_id", referencedColumnName = "id")
+    private Libro libro;
 
     @NotNull(message = "La fecha de préstamo es obligatoria.")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Temporal(TemporalType.DATE)
     private Date fechaPrestamo;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Temporal(TemporalType.DATE)
     private Date fechaDevolucionPrevista;
 
@@ -42,9 +44,9 @@ public class Prestamo extends RepresentationModel<Prestamo> {
 
     public Prestamo() {}
 
-    public Prestamo(Long usuario_id, Long libro_id, Date fechaPrestamo) {
-        this.usuarioId = usuario_id;
-        this.libroId = libro_id;
+    public Prestamo(Usuario usuario, Libro libro, Date fechaPrestamo) {
+        this.usuario = usuario;
+        this.libro = libro;
         this.fechaPrestamo = fechaPrestamo;
         this.fechaDevolucionPrevista = calcularFechaDevolucion(fechaPrestamo);
         this.fechaDevolucionReal = null;
@@ -62,13 +64,13 @@ public class Prestamo extends RepresentationModel<Prestamo> {
 
     public void setId(Long id) { this.id = id; }
 
-    public Long getUsuarioId() { return usuarioId; }
+    public Usuario getUsuario() { return usuario; }
 
-    public void setUsuarioId(Long usuario_id) { this.usuarioId = usuario_id; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 
-    public Long getLibroId() { return libroId; }
+    public Libro getLibro() { return libro; }
 
-    public void setLibro(Long libro_id) { this.libroId = libro_id; }
+    public void setLibro(Libro libro) { this.libro = libro; }
 
     public Date getFechaPrestamo() { return fechaPrestamo; }
 

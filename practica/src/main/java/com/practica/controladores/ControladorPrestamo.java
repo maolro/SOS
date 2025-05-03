@@ -1,6 +1,7 @@
 package com.practica.controladores;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.practica.assembler.EnsambladorPrestamo;
 import com.practica.objetos.CrearPrestamoDTO;
@@ -61,7 +62,7 @@ public class ControladorPrestamo {
     @GetMapping(value = "/{id}", produces = { "application/json", "application/xml", "application/hal+json" })
     public ResponseEntity<Prestamo> obtenerPrestamoPorId(@PathVariable Long id) {
         Prestamo prestamo = prestamoService.obtenerPrestamoPorId(id)
-            .orElseThrow(() -> new RuntimeException("No se ha encontrado el préstamo"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el préstamo"));
         prestamo.add(linkTo(methodOn(ControladorPrestamo.class).obtenerPrestamoPorId(id)).withSelfRel());
         return ResponseEntity.ok(prestamo);
     }
@@ -78,27 +79,31 @@ public class ControladorPrestamo {
         Prestamo prestamo = repositorioPrestamo.save(prestamoService.crearPrestamo(prestamoDTO));
         return ResponseEntity.status(HttpStatus.CREATED).body(prestamo);
     }
+    // Esta función elimina el préstamo con el ID indicado
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarPrestamo(@PathVariable Long id) {
+        prestamoService.eliminarPrestamo(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/{id}/devolucion")
     public ResponseEntity<?> devolverPrestamo(@PathVariable Long id){
         Date fechaActual = new Date();
         Prestamo prestamo = prestamoService.obtenerPrestamoPorId(id)
-            .orElseThrow(() -> new RuntimeException("No se ha encontrado el préstamo"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el préstamo"));
         prestamo.setFechaDevolucionReal(fechaActual);
         if(fechaActual.after(prestamo.getFechaDevolucionPrevista())){
             prestamo.setSancion("El usuario está sancionado");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body("Préstamo devuelto con retraso. Se aplicará una sanción.");
         }
         prestamoService.actualizarPrestamo(id, prestamo);
-        return ResponseEntity.ok().body("Préstamo devuelto en plazo.");
+        return ResponseEntity.ok().body(prestamo);
     }
     // Función que gestiona la ampliación del préstamo
     @PostMapping("/{id}/ampliar")
     public ResponseEntity<?> ampliarPrestamo(@PathVariable Long id, @RequestParam(required = true) Integer dias){
         // Se obtiene el préstamo con el id indicado
         Prestamo prestamo = prestamoService.obtenerPrestamoPorId(id)
-            .orElseThrow(() -> new RuntimeException("No se ha encontrado el préstamo"));  
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el préstamo"));
         // Si se amplía después de la fecha de devolución entonces no se aplicará y devuelve Bad Request
         Date fechaActual = new Date();
         if(fechaActual.after(prestamo.getFechaDevolucionPrevista())){
@@ -113,6 +118,6 @@ public class ControladorPrestamo {
         prestamo.setFechaDevolucionPrevista(cal.getTime());
         prestamo.setAmpliado(true);
         prestamoService.actualizarPrestamo(id, prestamo);
-        return ResponseEntity.ok().body("Se ha ampliado exitosamente el préstamo.");
+        return ResponseEntity.ok().body(prestamo);
     }
 }

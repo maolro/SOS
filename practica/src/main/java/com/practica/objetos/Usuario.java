@@ -25,7 +25,7 @@ public class Usuario extends RepresentationModel<Usuario>{
     @NotBlank(message = "La matrícula es obligatoria.")
     private String matricula;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Temporal(TemporalType.DATE)
     private Date fechaNacimiento;
 

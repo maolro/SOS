@@ -1,8 +1,10 @@
 package com.practica.controladores;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.practica.assembler.EnsambladorLibro;
+import com.practica.assembler.EnsambladorPrestamo;
 import com.practica.assembler.EnsambladorUsuario;
 import com.practica.objetos.*;
 import com.practica.servicios.*;
@@ -40,9 +42,10 @@ public class ControladorUsuario {
     private PagedResourcesAssembler<Prestamo> pagedResourcesAssemblerPrestamo;
     private EnsambladorUsuario ensambladorUsuario;
     private EnsambladorLibro ensambladorLibro;
+    private EnsambladorPrestamo ensambladorPrestamo;
     private RepositorioUsuario repositorioUsuario;
-    private RepositorioPrestamo repositorioPrestamo;
     private RepositorioLibro repositorioLibro;
+    private RepositorioPrestamo repositorioPrestamo;
 
     public ControladorUsuario(ServicioUsuario userService, 
     RepositorioUsuario repositorioUsuario,
@@ -50,6 +53,8 @@ public class ControladorUsuario {
     PagedResourcesAssembler<Libro> pagedResourcesAssemblerLibro,
     PagedResourcesAssembler<Prestamo> pagedResourcesAssemblerPrestamo,
     EnsambladorUsuario ensambladorUsuario,
+    EnsambladorLibro ensambladorLibro,
+    EnsambladorPrestamo ensambladorPrestamo,
     RepositorioPrestamo repositorioPrestamo,
     RepositorioLibro repositorioLibro) {
 
@@ -59,12 +64,14 @@ public class ControladorUsuario {
         this.pagedResourcesAssemblerLibro = pagedResourcesAssemblerLibro;
         this.pagedResourcesAssemblerPrestamo = pagedResourcesAssemblerPrestamo;
         this.ensambladorUsuario = ensambladorUsuario;
-        this.repositorioLibro = repositorioLibro;
+        this.ensambladorLibro = ensambladorLibro;
+        this.ensambladorPrestamo = ensambladorPrestamo;
         this.repositorioPrestamo = repositorioPrestamo;
+        this.repositorioLibro = repositorioLibro;
     }
 
     @GetMapping(value = "", produces = { "application/json", "application/xml" })
-    public ResponseEntity<PagedModel<Usuario>> getEmpleados(
+    public ResponseEntity<PagedModel<Usuario>> getUsuarios(
             @RequestParam(defaultValue = "", required = false) String starts_with,
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size) {
@@ -78,7 +85,7 @@ public class ControladorUsuario {
     "application/hal+json" })
     public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
         Usuario usuario = userService.obtenerUsuarioPorId(id)
-            .orElseThrow(() -> new RuntimeException("No se ha encontrado el usuario"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
         usuario.add(linkTo(methodOn(ControladorUsuario.class).obtenerUsuarioPorId(id)).withSelfRel());
         return ResponseEntity.ok(usuario);
     }
@@ -97,8 +104,9 @@ public class ControladorUsuario {
     }
 
     @DeleteMapping("/{id}")
-    public void eliminarUsuario(@PathVariable Long id) {
+    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
         userService.eliminarUsuario(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
@@ -125,20 +133,36 @@ public class ControladorUsuario {
     public ResponseEntity<?> historicoLibrosUsuario(@PathVariable Long id,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size){
+        
+        Usuario usuario = userService.obtenerUsuarioPorId(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
 
-        List<Prestamo> prestamos = repositorioPrestamo.findByUsuarioId(id);
+        List<Prestamo> prestamos = repositorioPrestamo.findByUsuario(usuario);
+
+        if (prestamos.isEmpty()) {
+            return ResponseEntity.ok()
+                .body(Map.of("mensaje", "No se encontraron préstamos para el usuario con ID " + id));
+        }
+        List<Libro> libros = prestamos.stream().map(Prestamo::getLibro)
+        .distinct().toList();
+
+        return ResponseEntity.ok().body(libros);
+    }
+    @GetMapping("/{id}/actividad")
+    public ResponseEntity<?> actividadUsuario(@PathVariable Long id,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size){
+        
+        Usuario usuario = userService.obtenerUsuarioPorId(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
+
+        List<Prestamo> prestamos = repositorioPrestamo.findTop5ByUsuarioOrderByFechaPrestamoDesc(usuario);
 
         if (prestamos.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("mensaje", "No se encontraron préstamos para el usuario con ID " + id));
         }
-        List<Long> libroIds = prestamos.stream().map(Prestamo::getLibroId).toList();
-        List<Libro> libros = repositorioLibro.findAllById(libroIds);
-
-        int start = Math.min(page * size, libros.size());
-        int end = Math.min(start + size, libros.size());
-        Page<Libro> pagina = new PageImpl<>(libros.subList(start, end), PageRequest.of(page, size), libros.size());
-
-        return ResponseEntity.ok(pagedResourcesAssemblerLibro.toModel(pagina, ensambladorLibro));
+        
+        return ResponseEntity.ok().body(prestamos);
     }
 }

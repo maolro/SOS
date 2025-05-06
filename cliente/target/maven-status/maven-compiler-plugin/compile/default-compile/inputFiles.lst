@@ -1,5 +1,11 @@
 C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\ClienteLibreria.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\EmbeddedPrestamo.java
 C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\CrearPrestamoDTO.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\LibroPagedResponse.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\EmbeddedLibro.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\EmbeddedUsuarios.java
 C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\Libro.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\PrestamoPagedResponse.java
 C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\Prestamo.java
+C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\wrappers\UsuarioPagedResponse.java
 C:\Users\matia\Documents\GitHub\SOS\cliente\src\main\java\com\client\Usuario.java

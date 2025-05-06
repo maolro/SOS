@@ -1,0 +1,41 @@
+version: '3'
+services:
+  postgres:
+    container_name: sos-postgres
+    image: postgres:15
+    environment:
+      POSTGRES_DB: library_db
+      POSTGRES_USER: usuario_sos
+      POSTGRES_PASSWORD: password_sos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuario_sos -d library_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - sos-network
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://sos-postgres:5432/library_db"
+      SPRING_DATASOURCE_USERNAME: usuario_sos
+      SPRING_DATASOURCE_PASSWORD: password_sos
+
+volumes:
+  postgres_data:
+
+networks:
+  sos-network:
+    driver: bridge

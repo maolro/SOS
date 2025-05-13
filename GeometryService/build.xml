@@ -1,0 +1,37 @@
+<project name="GeometryService" basedir="." default="build">
+
+    <property name="axis2.home" location="C:\axis2"/>
+    <property name="build.dir" location="build"/>
+    <property name="classes.dir" location="${build.dir}/classes"/>
+    <property name="aar.dir" location="${build.dir}/aar"/>
+    <property name="lib.dir" location="${axis2.home}/lib"/>
+    <property name="services.dir" location="${axis2.home}/repository/services"/>
+
+    <path id="compile.classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="src" destdir="${classes.dir}" includeantruntime="false" classpathref="compile.classpath"/>
+    </target>
+
+    <target name="package" depends="compile">
+        <mkdir dir="${aar.dir}/GeometryService/META-INF"/>
+        <copy todir="${aar.dir}/GeometryService">
+            <fileset dir="${classes.dir}"/>
+        </copy>
+        <copy file="src/META-INF/services.xml" tofile="${aar.dir}/GeometryService/META-INF/services.xml"/>
+        <jar destfile="${build.dir}/GeometryService.aar" basedir="${aar.dir}/GeometryService"/>
+    </target>
+
+    <target name="deploy" depends="package">
+        <copy file="${build.dir}/GeometryService.aar" todir="${services.dir}"/>
+    </target>
+
+    <target name="build" depends="deploy"/>
+</project>

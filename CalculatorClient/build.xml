@@ -108,10 +108,11 @@
     <target name="clean">
         <delete dir="${build}"/>
     </target>
-    <target name="run" depends="compile.src" if="jars.ok">
-        <java classname="${main.class}" fork="true">
+    <target name="run.jar" depends="jar.client">
+        <echo message="Running the generated .jar file..."/>
+        <java classname="sos.t3.calculadora.cliente.Cliente" fork="true">
             <classpath>
-                <pathelement location="${classes}"/>
+                <pathelement location="${lib}/${name}-test-client.jar"/>
                 <path refid="axis2.class.path"/>
             </classpath>
         </java>

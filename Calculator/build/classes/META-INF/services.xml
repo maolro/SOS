@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file was auto-generated from WSDL -->
+<!-- by the Apache Axis2 version: 1.6.2  Built on : Apr 17, 2012 (05:33:49 IST) -->
+<serviceGroup>
+    <service name="CalculatorService" scope="soapsession">
+        <messageReceivers>
+            <messageReceiver mep="http://www.w3.org/ns/wsdl/in-out" class="sos.t3.a32.calculator.CalculatorServiceMessageReceiverInOut"/>
+        </messageReceivers>
+        <parameter name="ServiceClass">sos.t3.a32.calculator.CalculatorServiceSkeleton</parameter>
+        <parameter name="useOriginalwsdl">false</parameter>
+        <parameter name="modifyUserWSDLPortAddress">true</parameter>
+        <operation name="add" mep="http://www.w3.org/ns/wsdl/in-out" namespace="http://calculator.a32.t3.sos">
+            <actionMapping>urn:add</actionMapping>
+            <outputActionMapping>urn:addResponse</outputActionMapping>
+            <faultActionMapping faultName="errorInOperation">urn:adderrorInOperation</faultActionMapping>
+        </operation>
+        <operation name="addArray" mep="http://www.w3.org/ns/wsdl/in-out" namespace="http://calculator.a32.t3.sos">
+            <actionMapping>urn:addArray</actionMapping>
+            <outputActionMapping>urn:addArrayResponse</outputActionMapping>
+            <faultActionMapping faultName="errorInOperation">urn:addArrayerrorInOperation</faultActionMapping>
+        </operation>
+        <operation name="incrementValue" mep="http://www.w3.org/ns/wsdl/in-out" namespace="http://calculator.a32.t3.sos">
+            <actionMapping>urn:incrementValue</actionMapping>
+            <outputActionMapping>urn:incrementValueResponse</outputActionMapping>
+            <faultActionMapping faultName="errorInOperation">urn:incrementValueerrorInOperation</faultActionMapping>
+        </operation>
+    </service>
+</serviceGroup>

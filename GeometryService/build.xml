@@ -1,6 +1,6 @@
 <project name="GeometryService" basedir="." default="build">
-
-    <property name="axis2.home" location="C:\axis2"/>
+    <property environment="env"/>
+    <property name="axis2.home" location="${env.AXIS2_HOME}"/>
     <property name="build.dir" location="build"/>
     <property name="classes.dir" location="${build.dir}/classes"/>
     <property name="aar.dir" location="${build.dir}/aar"/>
@@ -17,7 +17,14 @@
 
     <target name="compile">
         <mkdir dir="${classes.dir}"/>
-        <javac srcdir="src" destdir="${classes.dir}" includeantruntime="false" classpathref="compile.classpath"/>
+        <javac 
+            srcdir="src" 
+            destdir="${classes.dir}" 
+            includeantruntime="false" 
+            classpathref="compile.classpath"
+            source="1.8"
+            target="1.8"
+        />
     </target>
 
     <target name="package" depends="compile">

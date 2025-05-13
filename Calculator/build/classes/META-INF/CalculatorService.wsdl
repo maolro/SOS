@@ -1,0 +1,18 @@
+<wsdl2:description xmlns:wsdl2="http://www.w3.org/ns/wsdl" xmlns:wsoap="http://www.w3.org/ns/wsdl/soap" xmlns:whttp="http://www.w3.org/ns/wsdl/http" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:wsdlx="http://www.w3.org/ns/wsdl-extensions" xmlns:tns="http://calculator.a32.t3.sos" xmlns:wrpc="http://www.w3.org/ns/wsdl/rpc" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://org.apache.axis2/xsd" targetNamespace="http://calculator.a32.t3.sos"><wsdl2:types><xs:schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://calculator.a32.t3.sos">
+<xs:complexType name="tSimpleAddition">
+<xs:sequence>
+<xs:element name="addend1" type="xs:int" />
+<xs:element name="addend2" type="xs:int" />
+</xs:sequence>
+</xs:complexType>
+<xs:element name="simpleAddition" type="tns:tSimpleAddition" />
+<xs:complexType name="tArrayAddition">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="addend" type="xs:int" />
+</xs:sequence>
+</xs:complexType>
+<xs:element name="arrayAddition" type="tns:tArrayAddition" />
+<xs:element name="increment" type="xs:int" />
+<xs:element name="result" type="xs:int" />
+<xs:element name="somethingIsWrong" type="xs:string" />
+</xs:schema></wsdl2:types><wsdl2:interface name="calculatorInterface"><wsdl2:fault name="errorInOperation" element="tns:somethingIsWrong" /><wsdl2:operation name="add" style="http://www.w3.org/ns/wsdl/style/rpc" wrpc:signature="" pattern="http://www.w3.org/ns/wsdl/in-out" wsdlx:safe="false"><wsdl2:input element="tns:simpleAddition" wsaw:Action="urn:add" /><wsdl2:output element="tns:result" wsaw:Action="urn:addResponse" /><wsdl2:outfault ref="tns:errorInOperation" wsaw:Action="urn:adderrorInOperation" /></wsdl2:operation><wsdl2:operation name="addArray" style="http://www.w3.org/ns/wsdl/style/rpc" wrpc:signature="" pattern="http://www.w3.org/ns/wsdl/in-out" wsdlx:safe="false"><wsdl2:input element="tns:arrayAddition" wsaw:Action="urn:addArray" /><wsdl2:output element="tns:result" wsaw:Action="urn:addArrayResponse" /><wsdl2:outfault ref="tns:errorInOperation" wsaw:Action="urn:addArrayerrorInOperation" /></wsdl2:operation><wsdl2:operation name="incrementValue" style="http://www.w3.org/ns/wsdl/style/rpc" wrpc:signature="" pattern="http://www.w3.org/ns/wsdl/in-out" wsdlx:safe="false"><wsdl2:input element="tns:increment" wsaw:Action="urn:incrementValue" /><wsdl2:output element="tns:result" wsaw:Action="urn:incrementValueResponse" /><wsdl2:outfault ref="tns:errorInOperation" wsaw:Action="urn:incrementValueerrorInOperation" /></wsdl2:operation></wsdl2:interface><wsdl2:binding name="calculatorSOAP12Binding" interface="tns:calculatorInterface" type="http://www.w3.org/ns/wsdl/soap" wsoap:version="1.2"><wsdl2:operation ref="tns:add" wsoap:action="urn:add" wsoap:mep="http://www.w3.org/2003/05/soap/mep/request-response" /><wsdl2:operation ref="tns:addArray" wsoap:action="urn:addArray" wsoap:mep="http://www.w3.org/2003/05/soap/mep/request-response" /><wsdl2:operation ref="tns:incrementValue" wsoap:action="urn:incrementValue" wsoap:mep="http://www.w3.org/2003/05/soap/mep/request-response" /></wsdl2:binding><wsdl2:service name="CalculatorService" interface="tns:calculatorInterface"><wsdl2:endpoint name="calculatorSOAPEndPoint" binding="tns:calculatorSOAP12Binding" address="http://localhost:8080/axis2/services/CalculatorService" /></wsdl2:service></wsdl2:description>

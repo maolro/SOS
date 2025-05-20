@@ -1,0 +1,4 @@
+// Generación del servicio a partir de wsdl
+$AXIS2_HOME/bin/wsdl2java.sh -uri ETSIINFLibrary.wsdl -ss -sd -d adb -o com.practica
+// Generación del cliente a partir de wsdl
+$AXIS2_HOME/bin/wsdl2java.sh -wsdlVersion 2.0 -uri UPMAuthorization.wsdl -d adb -s -o com.cliente

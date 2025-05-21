@@ -1,4 +1,5 @@
 // Generación del servicio a partir de wsdl
-$AXIS2_HOME/bin/wsdl2java.sh -uri ETSIINFLibrary.wsdl -ss -sd -d adb -o com.practica
+$AXIS2_HOME/bin/wsdl2java.sh -uri ETSIINFLibrary.wsdl -ss -sd -d  -wv 2.0  adb -p com.practica
 // Generación del cliente a partir de wsdl
-$AXIS2_HOME/bin/wsdl2java.sh -wsdlVersion 2.0 -uri UPMAuthorization.wsdl -d adb -s -o com.cliente
+$AXIS2_HOME/bin/wsdl2java.sh -uri UpmAuthenticationAuthorization.wsdl -o com.cliente -d adb -s
+%AXIS2_HOME%\bin\WSDL2java.bat -uri UpmAuthenticationAuthorization.wsdl -wv 2.0 -p com.cliente -d adb 

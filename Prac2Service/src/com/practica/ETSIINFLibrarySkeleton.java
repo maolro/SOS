@@ -9,16 +9,36 @@ package com.practica;
 import org.apache.axis2.context.MessageContext;
 import org.apache.axis2.context.ServiceContext;
 
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponse;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponseBackEnd;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePasswordBackEnd;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePasswordResponseE;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.LoginBackEnd;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUser;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserE;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserResponse;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserResponseE;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.UserBackEnd;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Username;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import es.upm.etsiinf.sos.AddBookResponse;
 import es.upm.etsiinf.sos.BorrowBookResponse;
+import es.upm.etsiinf.sos.ChangePasswordResponse;
+import es.upm.etsiinf.sos.DeleteUser;
+import es.upm.etsiinf.sos.DeleteUserResponse;
 import es.upm.etsiinf.sos.GetBookResponse;
 import es.upm.etsiinf.sos.GetBooksFromAuthorResponse;
 import es.upm.etsiinf.sos.ListBooksResponse;
@@ -27,16 +47,14 @@ import es.upm.etsiinf.sos.LoginResponse;
 import es.upm.etsiinf.sos.LogoutResponse;
 import es.upm.etsiinf.sos.RemoveBookResponse;
 import es.upm.etsiinf.sos.ReturnBookResponse;
-import es.upm.etsiinf.sos.model.xsd.Author;
-import es.upm.etsiinf.sos.model.xsd.Book;
-import es.upm.etsiinf.sos.model.xsd.BookList;
-import es.upm.etsiinf.sos.model.xsd.Response;
-import es.upm.etsiinf.sos.model.xsd.User;
+import es.upm.etsiinf.sos.model.xsd.*;
 
 /**
  * ETSIINFLibrarySkeleton java skeleton for the axisService
  */
 public class ETSIINFLibrarySkeleton {
+        // Cliente para UPMAuthorization
+        private UPMAuthenticationAuthorizationWSSkeletonStub upmAuth =               new UPMAuthenticationAuthorizationWSSkeletonStub();
         // Mapa que guarda libros usando ISSN como clave. Emplea un mapa auxiliar de disponibilidad
         private static Map<String,Book> libros = new LinkedHashMap<>();
         private static Map<String,Integer> inventario = new ConcurrentHashMap<>();
@@ -44,30 +62,37 @@ public class ETSIINFLibrarySkeleton {
         private static Map<String,List<Book>> prestamos = new ConcurrentHashMap<>();
         // Mapa que guarda usuarios locales (solo admin)
         private static Map<String,String> localUsers = new HashMap<>();
-        // Inicializa admin al arrancar
+        // Inicializa admin y crea cliente stub al arrancar
         static {
                 localUsers.put("admin", "admin");
         }
         // MÉTODOS AUXILIARES
-
-        // Clase auxiliar para obtener usuario actual
-        private String validarSesion() throws Exception{
+        // Clase auxiliar para el id de la sesión actual
+        private String sesionActual() throws Exception{
                 MessageContext msgCtx = MessageContext.getCurrentMessageContext();
                 Object sessionHeader = msgCtx.getHeader("sessionId");
                 if(sessionHeader == null){
                         throw new Exception("Sesión inválida");
                 }
-                String sessionId = sessionHeader.toString();
-                if(SessionManager.getUsername(sessionId) == null){
-                        throw new Exception("Sesión caducada");
-                }
-                return SessionManager.getUsername(sessionId);
+                return sessionHeader.toString();
         }
         // Método auxiliar para buscar un libro en una lista en base al ISSN
         private Book buscarLibroISSN(String issn, List<Book> libros){
                 for(Book l : libros)
                         if(l.getISSN().equals(issn)) return l;
                 return null;
+        }
+        // Método auxiliar para eliminar todos los préstamos de un usuario y devolveros al inventario
+        private void eliminarPrestamosUsuario(String usuario){
+                for(Entry<String, List<Book>> pr : prestamos.entrySet()){
+                        if(pr.getKey().equals(usuario)){
+                                // Itera sobre libros prestados y los devuelve
+                                for(Book b : pr.getValue()){
+                                        inventario.put(b.getISSN(), inventario.get(b.getISSN()) + 1);
+                                        pr.getValue().remove(b);
+                                }
+                        }
+                }
         }
 
         // MÉTODOS PRINCIPALES
@@ -84,7 +109,7 @@ public class ETSIINFLibrarySkeleton {
                 BorrowBookResponse bresp = new BorrowBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = validarSesion();
+                        String usuario = SessionManager.getUsername(sesionActual());
                         String issn = borrowBook.getArgs0();
                         if(libros.containsKey(issn) && inventario.get(issn) > 0){
                                 inventario.put(issn, inventario.get(issn) - 1);
@@ -122,7 +147,7 @@ public class ETSIINFLibrarySkeleton {
                 ReturnBookResponse rbresp = new ReturnBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = validarSesion();
+                        String usuario = SessionManager.getUsername(sesionActual());
                         String issn = returnBook.getArgs0();
                         // Comprueba si el ISSN pertenece a un libro en la biblioteca
                         if(!libros.containsKey(issn)) 
@@ -161,14 +186,20 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.LogoutResponse logout(
                         es.upm.etsiinf.sos.Logout logout) {
-                // Añade el ID de la sesión a MessageContext de Axis2 para guardar estado
-                MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                OMFactory fac = OMAbstractFactory.getOMFactory();
-                OMElement sessionHeader = fac.createOMElement("sessionId", null);
-                sessionHeader.set(null); 
-                msgCtx.addHeader(sessionHeader);
-
-                return new LogoutResponse();
+                LogoutResponse lgeresp = new LogoutResponse();
+                Response r = new Response();
+                try{
+                                        
+                        // Elimina el ID de todas las sesiones del usuario
+                        String usuario = SessionManager.getUsername(sesionActual());
+                        SessionManager.invalidateUserSessions(usuario);
+                        r.setResponse(true);
+                }
+                catch(Exception e){
+                        r.setResponse(false);
+                }
+                lgeresp.set_return(r);
+                return lgeresp;
         }
 
         /**
@@ -184,7 +215,7 @@ public class ETSIINFLibrarySkeleton {
                 Response resp = new Response();
                 try{
                         // Obtiene el usuario actual
-                        String username = validarSesion();
+                        String username = SessionManager.getUsername(sesionActual());
                         // Determina si el usuario tiene los privilegios adecuados
                         if(username != "admin"){
                                 throw new Exception("El usuario no tiene los permisos suficientes");
@@ -216,9 +247,34 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.DeleteUserResponse deleteUser(
                         es.upm.etsiinf.sos.DeleteUser deleteUser) {
-                // TODO : fill this with the necessary business logic
-                throw new java.lang.UnsupportedOperationException(
-                                "Please implement " + this.getClass().getName() + "#deleteUser");
+                DeleteUserResponse dluresp = new DeleteUserResponse();
+                Response r = new Response();
+                try{
+                        // Comprueba si es admin
+                        String usuario = SessionManager.getUsername(sesionActual());
+                        if(SessionManager.getRole(usuario) != "admin"){
+                                throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
+                        }
+                        // Elimina los préstamos del usuario antes de eliminarlo
+                        eliminarPrestamosUsuario(usuario);
+                        prestamos.remove(usuario);
+                        // Llama a UPMAuth para eliminar el usuario
+                        RemoveUser rmu = new RemoveUser();
+                        RemoveUserE rmue = new RemoveUserE();
+                        rmu.setName(usuario);
+                        rmue.setRemoveUser(rmu);
+                        if(!upmAuth.removeUser(rmue).get_return().getResult()){
+                                throw new Exception("La operación ha fallado");
+                        }
+                        // Si realiza bien esta operación todo OK
+                        r.setResponse(true);
+                }
+                catch(Exception e)
+                {
+                        r.setResponse(false);
+                }
+                dluresp.set_return(r);
+                return dluresp;
         }
 
         /**
@@ -230,10 +286,33 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.AddUserResponse addUser(
                         es.upm.etsiinf.sos.AddUser addUser) {
-                
-                // TODO : fill this with the necessary business logic
-                throw new java.lang.UnsupportedOperationException(
-                                "Please implement " + this.getClass().getName() + "#addUser");
+                es.upm.etsiinf.sos.AddUserResponse adduresp = new es.upm.etsiinf.sos.AddUserResponse();
+                es.upm.etsiinf.sos.model.xsd.AddUserResponse addURespObj = new  es.upm.etsiinf.sos.model.xsd.AddUserResponse();
+                AddUserResponse extAddU = new AddUserResponse();
+                AddUserResponseBackEnd addUserResponseBackEnd = new AddUserResponseBackEnd();
+                try{
+                        String usuario = SessionManager.getUsername(sesionActual());
+                        if(!SessionManager.getRole(usuario).equals("admin")){
+                                throw new Exception("No tienes los privilegios suficientes para ejecutar esa operación");
+                        }
+                        // Obtiene el nombre del usuario
+                        es.upm.etsiinf.sos.model.xsd.Username u = addUser.getArgs0();
+                        // Llama al servicio externo
+                        AddUser addUser2 = new AddUser();
+                        UserBackEnd ube = new UserBackEnd();
+                        ube.setName(u.getUsername());
+                        addUser2.setUser(ube);
+                        // Obtiene la respuesta
+                        AddUserResponse addUResp = upmAuth.addUser(addUser2);
+                        AddUserResponseBackEnd addURespBE = new AddUserResponseBackEnd();
+                        addURespObj.setResponse(addURespBE.getResult());
+                        addURespObj.setPwd(addURespBE.getPassword());
+                }
+                catch(Exception e){
+                        addURespObj.setResponse(false);
+                }
+                adduresp.set_return(addURespObj);
+                return adduresp;
         }
 
         /**
@@ -247,7 +326,7 @@ public class ETSIINFLibrarySkeleton {
                         es.upm.etsiinf.sos.GetBook getBook) {
                 GetBookResponse gbresp = new GetBookResponse();
                 try{
-                        validarSesion();
+                        sesionActual();
                         String issn = getBook.getArgs0();
                         if(libros.containsKey(issn)){
                                 gbresp.set_return(libros.get(issn));
@@ -274,7 +353,7 @@ public class ETSIINFLibrarySkeleton {
                 BookList bl = new BookList();
                 ListBooksResponse lbr = new ListBooksResponse();
                 try{
-                        validarSesion();
+                        sesionActual();
                         for(Map.Entry<String, Book> l : libros.entrySet()){
                                 bl.addBookNames(l.getValue().getName());
                                 bl.addIssns(l.getKey());
@@ -297,9 +376,32 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.ChangePasswordResponse changePassword(
                         es.upm.etsiinf.sos.ChangePassword changePassword) {
-                // TODO : fill this with the necessary business logic
-                throw new java.lang.UnsupportedOperationException(
-                                "Please implement " + this.getClass().getName() + "#changePassword");
+                ChangePasswordResponse chpr = new ChangePasswordResponse();
+                Response r = new Response();
+                try{
+                        String usuario = SessionManager.getUsername(sesionActual());
+                        PasswordPair pp = changePassword.getArgs0();
+                        // Si se trata del admin cambia en local
+                        if(usuario == "admin") 
+                                localUsers.put("admin", pp.getNewpwd());
+                        else{
+                                                        // Ejecuta la operación externa
+                        ChangePassword extChpw = new ChangePassword();
+                        ChangePasswordBackEnd extChpwBE = new ChangePasswordBackEnd();
+                        extChpwBE.setName(usuario);
+                        extChpwBE.setOldpwd(pp.getOldpwd());
+                        extChpwBE.setNewpwd(pp.getNewpwd());
+                        extChpw.setChangePassword(extChpwBE);
+                        ChangePasswordResponseE chpwE = upmAuth.changePassword(extChpw);
+                        // comprueba si la operación ha sido exitosa
+                        r.setResponse(chpwE.get_return().getResult());
+                        }
+                }
+                catch(Exception e){
+                        r.setResponse(false);
+                }
+                chpr.set_return(r);
+                return chpr;
         }
 
         /**
@@ -311,22 +413,41 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.LoginResponse login(
                         es.upm.etsiinf.sos.Login login) {
-                User user = login.getArgs0();
                 LoginResponse lresp = new LoginResponse();
                 Response res = new Response();
-                if(user.getName() == "admin"){ 
-                        res.setResponse(user.getPwd().equals(localUsers.get("admin")));
-                        lresp.set_return(res);
-                        SessionManager.createSession("admin");
+                try{
+                        User user = login.getArgs0();
+                        // Si es admin autentica en local
+                        if(user.getName() == "admin" && !user.getPwd().equals(localUsers.get("admin"))){
+                                throw new Exception("Contraseña incorrecta");
+                        }
+                        // Si no es admin autentica usando el servicio externo
+                        else{
+                                // Prepara el servicio externo
+                                Login extLogin = new Login();
+                                LoginBackEnd loginBE = new LoginBackEnd();
+                                loginBE.setName(user.getName());
+                                loginBE.setPassword(user.getPwd());
+                                extLogin.setLogin(loginBE);
+                                // Determina resultado de operación
+                                if(!upmAuth.login(extLogin).get_return().getResult())
+                                        throw new Exception("Operación externa fallida");
+                        }
+                        // Crea una nueva sesión
+                        String sessionId = SessionManager.createSession(user.getName());
+                        // Añade el ID de la sesión a MessageContext de Axis2 para guardar estado
+                        MessageContext msgCtx = MessageContext.getCurrentMessageContext();
+                        OMFactory fac = OMAbstractFactory.getOMFactory();
+                        OMElement sessionHeader = fac.createOMElement("sessionId", null);
+                        sessionHeader.setText(sessionId); 
+                        msgCtx.addHeader(sessionHeader); 
+                        res.setResponse(true);      
                 }
-                String sessionId = SessionManager.createSession(user.getName());
-                // Añade el ID de la sesión a MessageContext de Axis2 para guardar estado
-                MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                OMFactory fac = OMAbstractFactory.getOMFactory();
-                OMElement sessionHeader = fac.createOMElement("sessionId", null);
-                sessionHeader.setText(sessionId); 
-                msgCtx.addHeader(sessionHeader);
+                catch(Exception e){
+                        res.setResponse(false);
+                }
                 // Retorna la respuesta
+                lresp.set_return(res);
                 return lresp;
         }
 
@@ -343,7 +464,7 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         // Comprueba si el usuario es admin
-                        if(SessionManager.getRole(validarSesion()) != "admin"){
+                        if(SessionManager.getRole(SessionManager.getUsername(sesionActual())) != "admin"){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
                         }
                         Book book = addBook.getArgs0();
@@ -379,7 +500,7 @@ public class ETSIINFLibrarySkeleton {
                 GetBooksFromAuthorResponse gbfaresp = new GetBooksFromAuthorResponse();
                 BookList bl = new BookList();
                 try{
-                        validarSesion();
+                        sesionActual();
                         Author author = getBooksFromAuthor.getArgs0();
                         for(Map.Entry<String, Book> entry : libros.entrySet()){
                                 Book b = entry.getValue();
@@ -409,7 +530,7 @@ public class ETSIINFLibrarySkeleton {
                 ListBorrowedBooksResponse lbbresp = new ListBorrowedBooksResponse();
                 BookList bl = new BookList();
                 try{
-                        String usuario = validarSesion();
+                        String usuario = SessionManager.getUsername(sesionActual());
                         if(!prestamos.containsKey(usuario))
                                 throw new Exception("El usuario indicado no tiene préstamos");
                         // Obtiene la lista de préstamos e itera sobre ella

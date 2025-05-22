@@ -6,6 +6,8 @@
  */
 package com.cliente;
 
+import com.practica.ETSIINFLibraryStub.User;
+
 /*
  *  UPMAuthenticationAuthorizationWSSkeletonStub java implementation
  */
@@ -9783,6 +9785,11 @@ public class UPMAuthenticationAuthorizationWSSkeletonStub extends org.apache.axi
         return object;
       }
     } // end of factory class
+
+    public void setArgs0(User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setArgs0'");
+    }
   }
 
   private org.apache.axiom.om.OMElement toOM(

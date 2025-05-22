@@ -39,12 +39,12 @@
         <echo message="Axis2 Availability= ${axis2.available}"/>
     </target>
     <target depends="pre.compile.test" name="compile.src" if="jars.ok">
-        <javac debug="on" memoryMaximumSize="256m" memoryInitialSize="256m" fork="true" destdir="${classes}" srcdir="${src}">
+        <javac debug="on" memoryMaximumSize="256m" memoryInitialSize="256m" fork="true" destdir="${classes}" srcdir="${src}" includeantruntime="false">
             <classpath refid="axis2.class.path"/>
         </javac>
     </target>
     <target depends="compile.src" name="compile.test" if="jars.ok">
-        <javac debug="on" memoryMaximumSize="256m" memoryInitialSize="256m" fork="true" destdir="${classes}">
+        <javac debug="on" memoryMaximumSize="256m" memoryInitialSize="256m" fork="true" destdir="${classes}" includeantruntime="false">
             <src path="${test}"/>
             <classpath refid="axis2.class.path"/>
         </javac>
@@ -61,6 +61,7 @@
                 <include name="*.xsd"/>
             </fileset>
         </copy>
+        <copy file="${resources}/log4j.properties" toDir="${classes}"/>
         <jar destfile="${lib}/${name}.aar">
             <fileset excludes="**/Test.class" dir="${classes}"/>
         </jar>

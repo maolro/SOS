@@ -6,8 +6,7 @@
  */
 package com.cliente;
 
-import com.practica.ETSIINFLibraryStub.User;
-
+import es.upm.etsiinf.sos.model.xsd.*;
 /*
  *  UPMAuthenticationAuthorizationWSSkeletonStub java implementation
  */

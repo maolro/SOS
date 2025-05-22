@@ -1,7 +1,13 @@
 // Generación del servicio a partir de wsdl
-$AXIS2_HOME/bin/wsdl2java.sh -uri ETSIINFLibrary.wsdl -ss -sd -d  -wv 2.0  adb -p com.practica
+$AXIS2_HOME/bin/wsdl2java.sh -uri ETSIINFLibrary.wsdl -ss -sd -wv 2.0 -d adb -p com.practica
 // Generación del cliente a partir de wsdl (Linux y Windows)
-$AXIS2_HOME/bin/wsdl2java.sh -uri UpmAuthenticationAuthorization.wsdl -o com.cliente -d adb -s
+$AXIS2_HOME/bin/wsdl2java.sh -uri UpmAuthenticationAuthorization.wsdl -wv 2.0 -p com.cliente -d adb -s
 %AXIS2_HOME%\bin\WSDL2java.bat -uri UpmAuthenticationAuthorization.wsdl -wv 2.0 -p com.cliente -d adb
 // Arrancar el servidor ()
 $AXIS2_HOME/bin
+
+// CODE SERVER PREPARACIÓN
+curl -fsSL https://code-server.dev/install.sh | sh
+code-server --bind-addr 0.0.0.0:8081
+// AVISO: Hace falta configurar el Network de la máquina virtual a "Bridged Adapter"
+ip a

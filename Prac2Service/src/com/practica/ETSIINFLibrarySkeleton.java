@@ -6,55 +6,26 @@
  */
 package com.practica;
 
-import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.context.ServiceContext;
+import org.apache.axis2.context.*;
+import org.apache.axiom.om.*;
+import org.apache.axiom.soap.*;
+import org.apache.axis2.AxisFault;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponse;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponseBackEnd;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePasswordBackEnd;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePasswordResponseE;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.LoginBackEnd;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUser;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserE;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserResponse;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.RemoveUserResponseE;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.UserBackEnd;
-import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Username;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import com.cliente.*;
+import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.*;
+import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import es.upm.etsiinf.sos.AddBookResponse;
-import es.upm.etsiinf.sos.BorrowBookResponse;
-import es.upm.etsiinf.sos.ChangePasswordResponse;
-import es.upm.etsiinf.sos.DeleteUser;
-import es.upm.etsiinf.sos.DeleteUserResponse;
-import es.upm.etsiinf.sos.GetBookResponse;
-import es.upm.etsiinf.sos.GetBooksFromAuthorResponse;
-import es.upm.etsiinf.sos.ListBooksResponse;
-import es.upm.etsiinf.sos.ListBorrowedBooksResponse;
-import es.upm.etsiinf.sos.LoginResponse;
-import es.upm.etsiinf.sos.LogoutResponse;
-import es.upm.etsiinf.sos.RemoveBookResponse;
-import es.upm.etsiinf.sos.ReturnBookResponse;
+import es.upm.etsiinf.sos.*;
 import es.upm.etsiinf.sos.model.xsd.*;
-
 /**
  * ETSIINFLibrarySkeleton java skeleton for the axisService
  */
 public class ETSIINFLibrarySkeleton {
         // Cliente para UPMAuthorization
-        private UPMAuthenticationAuthorizationWSSkeletonStub upmAuth =               new UPMAuthenticationAuthorizationWSSkeletonStub();
+        private UPMAuthenticationAuthorizationWSSkeletonStub upmAuth;
         // Mapa que guarda libros usando ISSN como clave. Emplea un mapa auxiliar de disponibilidad
         private static Map<String,Book> libros = new LinkedHashMap<>();
         private static Map<String,Integer> inventario = new ConcurrentHashMap<>();
@@ -62,19 +33,48 @@ public class ETSIINFLibrarySkeleton {
         private static Map<String,List<Book>> prestamos = new ConcurrentHashMap<>();
         // Mapa que guarda usuarios locales (solo admin)
         private static Map<String,String> localUsers = new HashMap<>();
-        // Inicializa admin y crea cliente stub al arrancar
-        static {
-                localUsers.put("admin", "admin");
+        // Gestor de sesiones
+        private SessionManager sessionManager = new SessionManager();
+        // Gestión de logging
+        private static final Log log = LogFactory.getLog(ETSIINFLibrarySkeleton.class);
+        // INICIALIZACIÓN
+        public ETSIINFLibrarySkeleton(){
+                try{
+                        upmAuth = new UPMAuthenticationAuthorizationWSSkeletonStub();
+                        // Inicializa admin al arrancar
+                        localUsers.put("admin", "admin");
+                }
+                catch(AxisFault e){
+                        System.out.println("No ha podido inicializar el cliente UPMAuth: " + e.getMessage());
+                        throw new RuntimeException("Fallo al crear el cliente UPMAuth", e);
+                }
         }
         // MÉTODOS AUXILIARES
         // Clase auxiliar para el id de la sesión actual
         private String sesionActual() throws Exception{
                 MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                Object sessionHeader = msgCtx.getHeader("sessionId");
-                if(sessionHeader == null){
-                        throw new Exception("Sesión inválida");
+                if (msgCtx == null) {
+                        throw new Exception("MessageContext no disponible");
                 }
-                return sessionHeader.toString();
+                SOAPEnvelope envelope = msgCtx.getEnvelope();
+                if(envelope == null){
+                        throw new Exception("No hay envelope SOAP");
+                }
+                SOAPHeader header = envelope.getHeader();
+                if (header == null) {
+                        throw new Exception("No hay cabecera SOAP.");
+                }
+                Iterator<?> iter = header.getChildren();
+                while (iter.hasNext()) {
+                        Object next = iter.next();
+                        if (next instanceof OMElement) {
+                                OMElement element = (OMElement) next;
+                                if ("sessionId".equals(element.getLocalName())) {
+                                        return element.getText();
+                                }
+                        }
+                }
+                throw new Exception("ID de sesión inválido");
         }
         // Método auxiliar para buscar un libro en una lista en base al ISSN
         private Book buscarLibroISSN(String issn, List<Book> libros){
@@ -109,7 +109,7 @@ public class ETSIINFLibrarySkeleton {
                 BorrowBookResponse bresp = new BorrowBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = SessionManager.getUsername(sesionActual());
+                        String usuario = sessionManager.getUsername(sesionActual());
                         String issn = borrowBook.getArgs0();
                         if(libros.containsKey(issn) && inventario.get(issn) > 0){
                                 inventario.put(issn, inventario.get(issn) - 1);
@@ -130,6 +130,7 @@ public class ETSIINFLibrarySkeleton {
                 }
                 catch(Exception e){
                         r.setResponse(false);
+                        log.error("Operacion 'borrowBook' fallida: " + e.getMessage(), e);
                 }
                 bresp.set_return(r);
                 return bresp; 
@@ -147,7 +148,7 @@ public class ETSIINFLibrarySkeleton {
                 ReturnBookResponse rbresp = new ReturnBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = SessionManager.getUsername(sesionActual());
+                        String usuario = sessionManager.getUsername(sesionActual());
                         String issn = returnBook.getArgs0();
                         // Comprueba si el ISSN pertenece a un libro en la biblioteca
                         if(!libros.containsKey(issn)) 
@@ -171,6 +172,7 @@ public class ETSIINFLibrarySkeleton {
                         }
                 }
                 catch(Exception e){
+                        log.error("Operacion 'returnBook' fallida: " + e.getMessage(), e);
                         r.setResponse(false);
                 }
                 rbresp.set_return(r);
@@ -191,8 +193,8 @@ public class ETSIINFLibrarySkeleton {
                 try{
                                         
                         // Elimina el ID de todas las sesiones del usuario
-                        String usuario = SessionManager.getUsername(sesionActual());
-                        SessionManager.invalidateUserSessions(usuario);
+                        String usuario = sessionManager.getUsername(sesionActual());
+                        sessionManager.invalidateUserSessions(usuario);
                         r.setResponse(true);
                 }
                 catch(Exception e){
@@ -215,7 +217,7 @@ public class ETSIINFLibrarySkeleton {
                 Response resp = new Response();
                 try{
                         // Obtiene el usuario actual
-                        String username = SessionManager.getUsername(sesionActual());
+                        String username = sessionManager.getUsername(sesionActual());
                         // Determina si el usuario tiene los privilegios adecuados
                         if(username != "admin"){
                                 throw new Exception("El usuario no tiene los permisos suficientes");
@@ -251,8 +253,8 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         // Comprueba si es admin
-                        String usuario = SessionManager.getUsername(sesionActual());
-                        if(SessionManager.getRole(usuario) != "admin"){
+                        String usuario = sessionManager.getUsername(sesionActual());
+                        if(sessionManager.getRole(usuario) != "admin"){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
                         }
                         // Elimina los préstamos del usuario antes de eliminarlo
@@ -286,25 +288,26 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.AddUserResponse addUser(
                         es.upm.etsiinf.sos.AddUser addUser) {
+                // Declaración de variables principales
                 es.upm.etsiinf.sos.AddUserResponse adduresp = new es.upm.etsiinf.sos.AddUserResponse();
                 es.upm.etsiinf.sos.model.xsd.AddUserResponse addURespObj = new  es.upm.etsiinf.sos.model.xsd.AddUserResponse();
-                AddUserResponse extAddU = new AddUserResponse();
-                AddUserResponseBackEnd addUserResponseBackEnd = new AddUserResponseBackEnd();
+                // Código principal
                 try{
-                        String usuario = SessionManager.getUsername(sesionActual());
-                        if(!SessionManager.getRole(usuario).equals("admin")){
+                        String usuario = sessionManager.getUsername(sesionActual());
+                        if(!sessionManager.getRole(usuario).equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esa operación");
                         }
                         // Obtiene el nombre del usuario
                         es.upm.etsiinf.sos.model.xsd.Username u = addUser.getArgs0();
                         // Llama al servicio externo
-                        AddUser addUser2 = new AddUser();
+                        com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser addUser2 
+                        = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser();
                         UserBackEnd ube = new UserBackEnd();
                         ube.setName(u.getUsername());
                         addUser2.setUser(ube);
                         // Obtiene la respuesta
-                        AddUserResponse addUResp = upmAuth.addUser(addUser2);
-                        AddUserResponseBackEnd addURespBE = new AddUserResponseBackEnd();
+                        com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponse addUResp = upmAuth.addUser(addUser2);
+                        AddUserResponseBackEnd addURespBE = addUResp.get_return();
                         addURespObj.setResponse(addURespBE.getResult());
                         addURespObj.setPwd(addURespBE.getPassword());
                 }
@@ -376,25 +379,27 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.ChangePasswordResponse changePassword(
                         es.upm.etsiinf.sos.ChangePassword changePassword) {
-                ChangePasswordResponse chpr = new ChangePasswordResponse();
+                es.upm.etsiinf.sos.ChangePasswordResponse chpr 
+                = new es.upm.etsiinf.sos.ChangePasswordResponse();
                 Response r = new Response();
                 try{
-                        String usuario = SessionManager.getUsername(sesionActual());
+                        String usuario = sessionManager.getUsername(sesionActual());
                         PasswordPair pp = changePassword.getArgs0();
                         // Si se trata del admin cambia en local
                         if(usuario == "admin") 
                                 localUsers.put("admin", pp.getNewpwd());
                         else{
-                                                        // Ejecuta la operación externa
-                        ChangePassword extChpw = new ChangePassword();
-                        ChangePasswordBackEnd extChpwBE = new ChangePasswordBackEnd();
-                        extChpwBE.setName(usuario);
-                        extChpwBE.setOldpwd(pp.getOldpwd());
-                        extChpwBE.setNewpwd(pp.getNewpwd());
-                        extChpw.setChangePassword(extChpwBE);
-                        ChangePasswordResponseE chpwE = upmAuth.changePassword(extChpw);
-                        // comprueba si la operación ha sido exitosa
-                        r.setResponse(chpwE.get_return().getResult());
+                                // Ejecuta la operación externa
+                                com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword extChpw 
+                                = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword();
+                                ChangePasswordBackEnd extChpwBE = new ChangePasswordBackEnd();
+                                extChpwBE.setName(usuario);
+                                extChpwBE.setOldpwd(pp.getOldpwd());
+                                extChpwBE.setNewpwd(pp.getNewpwd());
+                                extChpw.setChangePassword(extChpwBE);
+                                ChangePasswordResponseE chpwE = upmAuth.changePassword(extChpw);
+                                // comprueba si la operación ha sido exitosa
+                                r.setResponse(chpwE.get_return().getResult());
                         }
                 }
                 catch(Exception e){
@@ -413,37 +418,59 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.LoginResponse login(
                         es.upm.etsiinf.sos.Login login) {
-                LoginResponse lresp = new LoginResponse();
+                log.debug("Se ha llamado el metodo 'login");
+                es.upm.etsiinf.sos.LoginResponse lresp = new  es.upm.etsiinf.sos.LoginResponse();
                 Response res = new Response();
                 try{
                         User user = login.getArgs0();
+                        //log.error("El usuario es "+user.getName());
                         // Si es admin autentica en local
-                        if(user.getName() == "admin" && !user.getPwd().equals(localUsers.get("admin"))){
-                                throw new Exception("Contraseña incorrecta");
+                        if(user.getName().equals("admin")){
+                            if(!user.getPwd().equals(localUsers.get("admin")))
+                                throw new Exception("Contrasena de admin incorrecta");
                         }
                         // Si no es admin autentica usando el servicio externo
                         else{
                                 // Prepara el servicio externo
-                                Login extLogin = new Login();
+                                com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login extLogin 
+                                = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login();
                                 LoginBackEnd loginBE = new LoginBackEnd();
                                 loginBE.setName(user.getName());
                                 loginBE.setPassword(user.getPwd());
                                 extLogin.setLogin(loginBE);
                                 // Determina resultado de operación
                                 if(!upmAuth.login(extLogin).get_return().getResult())
-                                        throw new Exception("Operación externa fallida");
+                                        throw new Exception("Operacion externa fallida");
                         }
                         // Crea una nueva sesión
-                        String sessionId = SessionManager.createSession(user.getName());
+                        String sessionId = sessionManager.createSession(user.getName());
                         // Añade el ID de la sesión a MessageContext de Axis2 para guardar estado
                         MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                        OMFactory fac = OMAbstractFactory.getOMFactory();
+                        if (msgCtx == null) {
+                            throw new Exception("MessageContext no está disponible");
+                        }
+                        // Obtiene la información de SOAP
+                        SOAPEnvelope envelope = msgCtx.getEnvelope();
+                        if (envelope == null) {
+                            throw new Exception("SOAPEnvelope es nulo");
+                        }
+                        SOAPHeader header = envelope.getHeader();
+                        // Si la cabecera es vacía la crea
+                        if (header == null) {
+                                SOAPFactory soapfct = (SOAPFactory) envelope.getOMFactory();
+                                header = soapfct.createSOAPHeader(envelope);
+                                envelope.addChild(header);
+                        }
+                        // Añade elemento sessionID
+                        OMFactory fac = envelope.getOMFactory();
                         OMElement sessionHeader = fac.createOMElement("sessionId", null);
-                        sessionHeader.setText(sessionId); 
-                        msgCtx.addHeader(sessionHeader); 
+                        sessionHeader.setText(sessionId);
+                        header.addChild(sessionHeader);
+                        // Devuelve la respuesta
                         res.setResponse(true);      
                 }
                 catch(Exception e){
+                        log.error("Operacion 'login' fallida: " + e.getMessage(), e);
                         res.setResponse(false);
                 }
                 // Retorna la respuesta
@@ -464,7 +491,7 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         // Comprueba si el usuario es admin
-                        if(SessionManager.getRole(SessionManager.getUsername(sesionActual())) != "admin"){
+                        if(sessionManager.getRole(sessionManager.getUsername(sesionActual())) != "admin"){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
                         }
                         Book book = addBook.getArgs0();
@@ -530,7 +557,7 @@ public class ETSIINFLibrarySkeleton {
                 ListBorrowedBooksResponse lbbresp = new ListBorrowedBooksResponse();
                 BookList bl = new BookList();
                 try{
-                        String usuario = SessionManager.getUsername(sesionActual());
+                        String usuario = sessionManager.getUsername(sesionActual());
                         if(!prestamos.containsKey(usuario))
                                 throw new Exception("El usuario indicado no tiene préstamos");
                         // Obtiene la lista de préstamos e itera sobre ella

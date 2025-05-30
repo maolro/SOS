@@ -6,12 +6,7 @@
  */
 package com.practica;
 
-import org.apache.axis2.context.*;
-import org.apache.axiom.om.*;
-import org.apache.axiom.soap.*;
 import org.apache.axis2.AxisFault;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import com.cliente.*;
 import com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.*;
@@ -33,10 +28,9 @@ public class ETSIINFLibrarySkeleton {
         private static Map<String,List<Book>> prestamos = new ConcurrentHashMap<>();
         // Mapa que guarda usuarios locales (solo admin)
         private static Map<String,String> localUsers = new HashMap<>();
-        // Gestor de sesiones
-        private SessionManager sessionManager = new SessionManager();
-        // Gestión de logging
-        private static final Log log = LogFactory.getLog(ETSIINFLibrarySkeleton.class);
+        // Gestor del usuario actual
+        private static String usuarioActual = null;
+        private static Integer sesionesTotales = 0;
         // INICIALIZACIÓN
         public ETSIINFLibrarySkeleton(){
                 try{
@@ -50,32 +44,6 @@ public class ETSIINFLibrarySkeleton {
                 }
         }
         // MÉTODOS AUXILIARES
-        // Clase auxiliar para el id de la sesión actual
-        private String sesionActual() throws Exception{
-                MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                if (msgCtx == null) {
-                        throw new Exception("MessageContext no disponible");
-                }
-                SOAPEnvelope envelope = msgCtx.getEnvelope();
-                if(envelope == null){
-                        throw new Exception("No hay envelope SOAP");
-                }
-                SOAPHeader header = envelope.getHeader();
-                if (header == null) {
-                        throw new Exception("No hay cabecera SOAP.");
-                }
-                Iterator<?> iter = header.getChildren();
-                while (iter.hasNext()) {
-                        Object next = iter.next();
-                        if (next instanceof OMElement) {
-                                OMElement element = (OMElement) next;
-                                if ("sessionId".equals(element.getLocalName())) {
-                                        return element.getText();
-                                }
-                        }
-                }
-                throw new Exception("ID de sesión inválido");
-        }
         // Método auxiliar para buscar un libro en una lista en base al ISSN
         private Book buscarLibroISSN(String issn, List<Book> libros){
                 for(Book l : libros)
@@ -109,19 +77,20 @@ public class ETSIINFLibrarySkeleton {
                 BorrowBookResponse bresp = new BorrowBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = sessionManager.getUsername(sesionActual());
+                        System.out.println("Se ha iniciado la operacion 'borrowBook'");
                         String issn = borrowBook.getArgs0();
                         if(libros.containsKey(issn) && inventario.get(issn) > 0){
                                 inventario.put(issn, inventario.get(issn) - 1);
                                 List<Book> listaLibros;
-                                if(prestamos.containsKey(usuario)){
-                                        listaLibros = prestamos.get(usuario);
+                                // Comprueba los préstamos del usuario actual
+                                if(prestamos.containsKey(usuarioActual)){
+                                        listaLibros = prestamos.get(usuarioActual);
                                 }
                                 else{
                                         listaLibros = new ArrayList<Book>();
                                 }
                                 listaLibros.add(libros.get(issn));
-                                prestamos.put(usuario, listaLibros);
+                                prestamos.put(usuarioActual, listaLibros);
                                 r.setResponse(true);
                         }
                         else{
@@ -130,7 +99,8 @@ public class ETSIINFLibrarySkeleton {
                 }
                 catch(Exception e){
                         r.setResponse(false);
-                        log.error("Operacion 'borrowBook' fallida: " + e.getMessage(), e);
+                        System.out.println("Operacion 'borrowBook' fallida: " 
+                        + e.getMessage());
                 }
                 bresp.set_return(r);
                 return bresp; 
@@ -148,31 +118,32 @@ public class ETSIINFLibrarySkeleton {
                 ReturnBookResponse rbresp = new ReturnBookResponse();
                 Response r = new Response();
                 try{
-                        String usuario = sessionManager.getUsername(sesionActual());
+                        System.out.println("Se ha iniciado la operacion 'returnBook'");
                         String issn = returnBook.getArgs0();
                         // Comprueba si el ISSN pertenece a un libro en la biblioteca
                         if(!libros.containsKey(issn)) 
                                 throw new Exception("El ISSN indicado no se corresponde a ningún libro existente");
-                        if(!prestamos.containsKey(usuario))
-                                throw new Exception("El usuario indicado no tiene préstamos activos");
+                        if(!prestamos.containsKey(usuarioActual))
+                                throw new Exception("El usuario no tiene préstamos activos");
                         // Busca para comprobar si se ha prestado el libro
-                        List<Book> listaPrestamos = prestamos.get(usuario);
+                        List<Book> listaPrestamos = prestamos.get(usuarioActual);
                         Book b = buscarLibroISSN(issn, listaPrestamos);
                         if(b != null){
                                 // Elimina el préstamo e inserta la nueva lista de préstamos
                                 listaPrestamos.remove(b);
-                                prestamos.put(usuario, listaPrestamos);
+                                prestamos.put(usuarioActual, listaPrestamos);
                                 // Actualiza el inventario
                                 inventario.put(issn, inventario.get(issn) + 1);
                                 // Indica que la operación ha sido exitosa
                                 r.setResponse(true);
                         }
                         else{
-                                throw new Exception("El usuario indicado no ha cogido prestado ese libro");
+                                throw new Exception("El usuario no ha cogido prestado ese libro");
                         }
                 }
                 catch(Exception e){
-                        log.error("Operacion 'returnBook' fallida: " + e.getMessage(), e);
+                        System.out.println("Operacion 'returnBook' fallida: " 
+                        + e.getMessage());
                         r.setResponse(false);
                 }
                 rbresp.set_return(r);
@@ -191,13 +162,17 @@ public class ETSIINFLibrarySkeleton {
                 LogoutResponse lgeresp = new LogoutResponse();
                 Response r = new Response();
                 try{
-                                        
-                        // Elimina el ID de todas las sesiones del usuario
-                        String usuario = sessionManager.getUsername(sesionActual());
-                        sessionManager.invalidateUserSessions(usuario);
+                        System.out.println("Se ha iniciado la operacion 'logout'");
+                        if(usuarioActual == null){
+                                throw new Exception("El usuario no ha iniciado sesión");
+                        } 
+                        usuarioActual = null;  
+                        sesionesTotales = 0;         
                         r.setResponse(true);
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'logout' fallida: " 
+                        + e.getMessage());
                         r.setResponse(false);
                 }
                 lgeresp.set_return(r);
@@ -216,10 +191,9 @@ public class ETSIINFLibrarySkeleton {
                 RemoveBookResponse rbresp = new RemoveBookResponse();
                 Response resp = new Response();
                 try{
-                        // Obtiene el usuario actual
-                        String username = sessionManager.getUsername(sesionActual());
+                        System.out.println("Se ha iniciado la operacion 'removeBook'");
                         // Determina si el usuario tiene los privilegios adecuados
-                        if(username != "admin"){
+                        if(!usuarioActual.equals("admin")){
                                 throw new Exception("El usuario no tiene los permisos suficientes");
                         }
                         // Obtiene el ISSN del libro a eliminar
@@ -234,6 +208,8 @@ public class ETSIINFLibrarySkeleton {
                         }
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'removeBook' fallida: " 
+                        + e.getMessage());
                         resp.setResponse(false);
                 }
                 rbresp.set_return(resp);
@@ -252,12 +228,13 @@ public class ETSIINFLibrarySkeleton {
                 DeleteUserResponse dluresp = new DeleteUserResponse();
                 Response r = new Response();
                 try{
+                        System.out.println("Se ha iniciado la operacion 'deleteUser'");
                         // Comprueba si es admin
-                        String usuario = sessionManager.getUsername(sesionActual());
-                        if(sessionManager.getRole(usuario) != "admin"){
+                        if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
                         }
                         // Elimina los préstamos del usuario antes de eliminarlo
+                        String usuario = deleteUser.getArgs0().getUsername();
                         eliminarPrestamosUsuario(usuario);
                         prestamos.remove(usuario);
                         // Llama a UPMAuth para eliminar el usuario
@@ -266,13 +243,15 @@ public class ETSIINFLibrarySkeleton {
                         rmu.setName(usuario);
                         rmue.setRemoveUser(rmu);
                         if(!upmAuth.removeUser(rmue).get_return().getResult()){
-                                throw new Exception("La operación ha fallado");
+                                throw new Exception("La operación externa ha fallado");
                         }
                         // Si realiza bien esta operación todo OK
                         r.setResponse(true);
                 }
                 catch(Exception e)
                 {
+                        System.out.println("Operacion 'deleteUser' fallida: " 
+                        + e.getMessage());
                         r.setResponse(false);
                 }
                 dluresp.set_return(r);
@@ -289,29 +268,37 @@ public class ETSIINFLibrarySkeleton {
         public es.upm.etsiinf.sos.AddUserResponse addUser(
                         es.upm.etsiinf.sos.AddUser addUser) {
                 // Declaración de variables principales
-                es.upm.etsiinf.sos.AddUserResponse adduresp = new es.upm.etsiinf.sos.AddUserResponse();
-                es.upm.etsiinf.sos.model.xsd.AddUserResponse addURespObj = new  es.upm.etsiinf.sos.model.xsd.AddUserResponse();
+                es.upm.etsiinf.sos.AddUserResponse adduresp 
+                = new es.upm.etsiinf.sos.AddUserResponse();
+                es.upm.etsiinf.sos.model.xsd.AddUserResponse addURespObj 
+                = new  es.upm.etsiinf.sos.model.xsd.AddUserResponse();
                 // Código principal
                 try{
-                        String usuario = sessionManager.getUsername(sesionActual());
-                        if(!sessionManager.getRole(usuario).equals("admin")){
+                        System.out.println("Se ha iniciado la operacion 'addUser'");
+                        if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esa operación");
                         }
-                        // Obtiene el nombre del usuario
-                        es.upm.etsiinf.sos.model.xsd.Username u = addUser.getArgs0();
                         // Llama al servicio externo
                         com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser addUser2 
                         = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUser();
-                        UserBackEnd ube = new UserBackEnd();
-                        ube.setName(u.getUsername());
+                        com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.UserBackEnd ube 
+                        = new UserBackEnd();
+                        ube.setName(addUser.getArgs0().getUsername());
+                        System.out.println("Se va a añadir al usuario "+ube.getName());
                         addUser2.setUser(ube);
                         // Obtiene la respuesta
-                        com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponse addUResp = upmAuth.addUser(addUser2);
+                        com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.AddUserResponse addUResp 
+                        = upmAuth.addUser(addUser2);
                         AddUserResponseBackEnd addURespBE = addUResp.get_return();
-                        addURespObj.setResponse(addURespBE.getResult());
+                        if(!addURespBE.getResult()){
+                                throw new Exception("La operación externa ha fallado");
+                        }
+                        addURespObj.setResponse(true);
                         addURespObj.setPwd(addURespBE.getPassword());
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'addUser' fallida: " 
+                        + e.getMessage());
                         addURespObj.setResponse(false);
                 }
                 adduresp.set_return(addURespObj);
@@ -329,7 +316,7 @@ public class ETSIINFLibrarySkeleton {
                         es.upm.etsiinf.sos.GetBook getBook) {
                 GetBookResponse gbresp = new GetBookResponse();
                 try{
-                        sesionActual();
+                        System.out.println("Se ha iniciado la operacion 'getBook'");
                         String issn = getBook.getArgs0();
                         if(libros.containsKey(issn)){
                                 gbresp.set_return(libros.get(issn));
@@ -339,6 +326,8 @@ public class ETSIINFLibrarySkeleton {
                         }
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'getBook' fallida: " 
+                        + e.getMessage());
                         gbresp.set_return(null);
                 }
                 return gbresp;
@@ -356,7 +345,7 @@ public class ETSIINFLibrarySkeleton {
                 BookList bl = new BookList();
                 ListBooksResponse lbr = new ListBooksResponse();
                 try{
-                        sesionActual();
+                        System.out.println("Se ha iniciado la operacion 'listBooks'");
                         for(Map.Entry<String, Book> l : libros.entrySet()){
                                 bl.addBookNames(l.getValue().getName());
                                 bl.addIssns(l.getKey());
@@ -364,6 +353,8 @@ public class ETSIINFLibrarySkeleton {
                         bl.setResult(true);
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'listBooks' fallida: " 
+                        + e.getMessage());
                         bl.setResult(false);
                 }
                 lbr.set_return(bl);
@@ -383,17 +374,17 @@ public class ETSIINFLibrarySkeleton {
                 = new es.upm.etsiinf.sos.ChangePasswordResponse();
                 Response r = new Response();
                 try{
-                        String usuario = sessionManager.getUsername(sesionActual());
+                        System.out.println("Se ha iniciado la operacion 'changePassword'");
                         PasswordPair pp = changePassword.getArgs0();
                         // Si se trata del admin cambia en local
-                        if(usuario == "admin") 
+                        if(usuarioActual == "admin") 
                                 localUsers.put("admin", pp.getNewpwd());
                         else{
                                 // Ejecuta la operación externa
                                 com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword extChpw 
                                 = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword();
                                 ChangePasswordBackEnd extChpwBE = new ChangePasswordBackEnd();
-                                extChpwBE.setName(usuario);
+                                extChpwBE.setName(usuarioActual);
                                 extChpwBE.setOldpwd(pp.getOldpwd());
                                 extChpwBE.setNewpwd(pp.getNewpwd());
                                 extChpw.setChangePassword(extChpwBE);
@@ -403,6 +394,8 @@ public class ETSIINFLibrarySkeleton {
                         }
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'changePassword' fallida: " 
+                        + e.getMessage());
                         r.setResponse(false);
                 }
                 chpr.set_return(r);
@@ -418,7 +411,7 @@ public class ETSIINFLibrarySkeleton {
 
         public es.upm.etsiinf.sos.LoginResponse login(
                         es.upm.etsiinf.sos.Login login) {
-                log.debug("Se ha llamado el metodo 'login");
+                System.out.println("Se ha llamado el metodo 'login'");
                 es.upm.etsiinf.sos.LoginResponse lresp = new  es.upm.etsiinf.sos.LoginResponse();
                 Response res = new Response();
                 try{
@@ -442,35 +435,16 @@ public class ETSIINFLibrarySkeleton {
                                 if(!upmAuth.login(extLogin).get_return().getResult())
                                         throw new Exception("Operacion externa fallida");
                         }
-                        // Crea una nueva sesión
-                        String sessionId = sessionManager.createSession(user.getName());
-                        // Añade el ID de la sesión a MessageContext de Axis2 para guardar estado
-                        MessageContext msgCtx = MessageContext.getCurrentMessageContext();
-                        if (msgCtx == null) {
-                            throw new Exception("MessageContext no está disponible");
-                        }
-                        // Obtiene la información de SOAP
-                        SOAPEnvelope envelope = msgCtx.getEnvelope();
-                        if (envelope == null) {
-                            throw new Exception("SOAPEnvelope es nulo");
-                        }
-                        SOAPHeader header = envelope.getHeader();
-                        // Si la cabecera es vacía la crea
-                        if (header == null) {
-                                SOAPFactory soapfct = (SOAPFactory) envelope.getOMFactory();
-                                header = soapfct.createSOAPHeader(envelope);
-                                envelope.addChild(header);
-                        }
-                        // Añade elemento sessionID
-                        OMFactory fac = envelope.getOMFactory();
-                        OMElement sessionHeader = fac.createOMElement("sessionId", null);
-                        sessionHeader.setText(sessionId);
-                        header.addChild(sessionHeader);
+                        // Crea y guarda la sesión
+                        usuarioActual = user.getName();
+                        sesionesTotales += 1;
+                        // Información para depurar
+                        System.out.println("El usuario '"+usuarioActual+"' se ha dado de alta");
                         // Devuelve la respuesta
                         res.setResponse(true);      
                 }
                 catch(Exception e){
-                        log.error("Operacion 'login' fallida: " + e.getMessage(), e);
+                        System.out.println("Operacion 'login' fallida: " + e.getMessage());
                         res.setResponse(false);
                 }
                 // Retorna la respuesta
@@ -490,8 +464,9 @@ public class ETSIINFLibrarySkeleton {
                 AddBookResponse abr = new AddBookResponse();
                 Response r = new Response();
                 try{
+                        System.out.println("Se ha iniciado la operacion 'addBook'");
                         // Comprueba si el usuario es admin
-                        if(sessionManager.getRole(sessionManager.getUsername(sesionActual())) != "admin"){
+                        if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
                         }
                         Book book = addBook.getArgs0();
@@ -509,6 +484,7 @@ public class ETSIINFLibrarySkeleton {
                         r.setResponse(true);
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'addBook' fallida: " + e.getMessage());
                         r.setResponse(false);
                 }
                 abr.set_return(r);
@@ -527,18 +503,20 @@ public class ETSIINFLibrarySkeleton {
                 GetBooksFromAuthorResponse gbfaresp = new GetBooksFromAuthorResponse();
                 BookList bl = new BookList();
                 try{
-                        sesionActual();
+                        System.out.println("Se ha iniciado la operacion 'getBooksFromAuthor'");
                         Author author = getBooksFromAuthor.getArgs0();
                         for(Map.Entry<String, Book> entry : libros.entrySet()){
                                 Book b = entry.getValue();
                                 if(Arrays.asList(b.getAuthors()).contains(author.getName())){
                                         bl.addBookNames(b.getName());
-                                        bl.addBookNames(b.getISSN());
+                                        bl.addIssns(b.getISSN());
                                 }
                         }
                         bl.setResult(true);
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'getBooksFromAuthor' fallida: " 
+                        + e.getMessage());
                         bl.setResult(false);
                 }
                 gbfaresp.set_return(bl);
@@ -557,11 +535,11 @@ public class ETSIINFLibrarySkeleton {
                 ListBorrowedBooksResponse lbbresp = new ListBorrowedBooksResponse();
                 BookList bl = new BookList();
                 try{
-                        String usuario = sessionManager.getUsername(sesionActual());
-                        if(!prestamos.containsKey(usuario))
+                        System.out.println("Se ha iniciado la operacion 'listBorrowedBooks'");
+                        if(!prestamos.containsKey(usuarioActual))
                                 throw new Exception("El usuario indicado no tiene préstamos");
                         // Obtiene la lista de préstamos e itera sobre ella
-                        for(Book b : prestamos.get(usuario)){
+                        for(Book b : prestamos.get(usuarioActual)){
                                 bl.addBookNames(b.getName());
                                 bl.addIssns(b.getISSN());
                         }
@@ -569,10 +547,11 @@ public class ETSIINFLibrarySkeleton {
 
                 }
                 catch(Exception e){
+                        System.out.println("Operacion 'listBoorowedBooks' fallida: " 
+                        + e.getMessage());
                         bl.setResult(false);
                 }      
                 lbbresp.set_return(bl);
                 return lbbresp;
         }
-
 }

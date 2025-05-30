@@ -79,6 +79,7 @@
     </target>
     <target if="jars.ok" depends="jar.server" name="make.repo">
         <mkdir dir="${build}/repo/"/>
+        <copy file="${axis2.home}/repository/modules/addressing-1.6.2.mar" tofile="${build}/repo/modules/addressing.mar"/>
         <mkdir dir="${build}/repo/services"/>
         <copy file="${build}/lib/${name}.aar" toDir="${build}/repo/services/"/>
     </target>

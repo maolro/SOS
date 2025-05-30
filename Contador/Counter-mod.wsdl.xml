@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl2:description xmlns:wsdl2="http://www.w3.org/ns/wsdl" xmlns:ns1="http://org.apache.axis2/xsd" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:whttp="http://www.w3.org/ns/wsdl/http" xmlns:wsoap="http://www.w3.org/ns/wsdl/soap" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://counter.a35.t3.sos" targetNamespace="http://counter.a35.t3.sos">
+
+<!-- Hacer un servicio con sesion SOAP, otro sesion por request, otro sesion por sistema
+     (scope del services.xml) -->
+<!-- Mirar metodos startUp shutDown, org.apache.axis2.engine.ServiceLifeCycle -->
+<!-- Métodos In-Out y solo In (meter un sleep en la implementación del servicio) -->
+
+    <wsdl2:types>
+        <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://counter.a35.t3.sos">
+
+            <!-- Amount to increment -->
+            <xs:element name="amount" type="xs:int"/>
+            <!-- All methods return an integer -->
+            <xs:element name="result" type="xs:int"/>
+
+            <!-- Finally we define a type for error messages -->
+            <xs:element name="somethingIsWrong" type="xs:string"/>    
+        </xs:schema>
+    </wsdl2:types>
+    
+    <wsdl2:interface name="CounterInterface">
+        
+        <!-- Possible faults in interface -->
+        <wsdl2:fault name="errorInOperation" element="tns:somethingIsWrong"/> 
+
+        <!-- the RPC style makes easier to map operations to single Java (or C#
+        or whatever) methods, only applicable to in-out or in-only MEPs -->
+        <wsdl2:operation name="increment" style="http://www.w3.org/ns/wsdl/style/rpc" pattern="http://www.w3.org/ns/wsdl/in-out">
+            <wsdl2:input element="tns:amount" wsaw:Action="urn:increment"/>
+            <wsdl2:output element="tns:result" wsaw:Action="urn:incrementResponse"/>
+            <wsdl2:outfault ref="tns:errorInOperation"/>
+        </wsdl2:operation>
+    </wsdl2:interface>
+
+    <!-- Binding with SOAP 1.2 -->
+    <wsdl2:binding name="CounterBinding" interface="tns:ServiceInterface" type="http://www.w3.org/ns/wsdl/soap" wsoap:version="1.2">
+        <!-- With whttp:mep we specify how to map the in-out WSDL MEP to a SOAP MEP (request-response in this case) -->
+        <wsdl2:operation ref="tns:increment" wsoap:mep="http://www.w3.org/2003/05/soap/mep/request-response" wsoap:action="urn:incrementAction"/>
+    </wsdl2:binding>
+
+    <!--
+    file:///home/luisroderomerino/Software/axis2-1.5.4/site/docs/xmlbased-server.html#Step2_:Write_the_services_xml_file
+    -->
+    <!-- Servicio con session por sistema -->
+    <wsdl2:service name="CounterAppSession" interface="tns:CounterInterface">
+        <wsdl2:endpoint name="incrementEndPoint" binding="tns:CounterBinding" address="http://localhost:8080/axis2/services/CounterAppSession"/>
+    </wsdl2:service>
+    <!-- Servicio con sesion por SOAP -->
+    <wsdl2:service name="CounterSOAPSession" interface="tns:CounterInterface">
+        <wsdl2:endpoint name="incrementEndPoint" binding="tns:CounterBinding" address="http://localhost:8080/axis2/services/CounterSOAPSession"/>
+    </wsdl2:service>
+    <!-- Servicio con sesion por request --> 
+    <wsdl2:service name="CounterRequestSession" interface="tns:CounterInterface">
+        <wsdl2:endpoint name="incrementEndPoint" binding="tns:CounterBinding" address="http://localhost:8080/axis2/services/CounterRequestSession"/>
+    </wsdl2:service>
+    <!-- Servicio con sesion por transporte --> 
+    <wsdl2:service name="CounterTransportSession" interface="tns:CounterInterface">
+        <wsdl2:endpoint name="incrementEndPoint" binding="tns:CounterBinding" address="http://localhost:8080/axis2/services/CounterTransportSession"/>
+    </wsdl2:service>
+
+</wsdl2:description>

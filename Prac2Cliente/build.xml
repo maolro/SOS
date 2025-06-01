@@ -1,30 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="Axis2ClientTester" default="run" basedir=".">
-    <!-- ===== Properties ===== -->
+    <property environment="env"/>
     <property name="src.dir" value="src"/>
     <property name="build.dir" value="build"/>
-    <property name="lib.dir" value="lib"/>
-    <!-- ===== Classpath ===== -->
+    <property name="axis2.home" value="${env.AXIS2_HOME}"/>
     <path id="classpath">
-        <fileset dir="${lib.dir}">
-            <include name="**/*.jar"/>
+        <pathelement path="${java.class.path}"/>
+        <pathelement path="${maven.class.path}"/>
+        <fileset dir="${axis2.home}">
+            <include name="lib/*.jar"/>
         </fileset>
     </path>
-    <!-- ===== Init ===== -->
     <target name="init">
         <mkdir dir="${build.dir}"/>
     </target>
-    <!-- ===== Compile ===== -->
     <target name="compile" depends="init">
         <javac srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false" classpathref="classpath"/>
     </target>
-    <!-- ===== Run the Tester ===== -->
     <target name="run" depends="compile">
         <java classname="com.cliente.TestETSIINFLibraryClient" fork="true" classpath="${build.dir}">
             <classpath refid="classpath"/>
         </java>
     </target>
-    <!-- ===== Clean ===== -->
     <target name="clean">
         <delete dir="${build.dir}"/>
     </target>

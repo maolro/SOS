@@ -56,9 +56,12 @@ public class ETSIINFLibrarySkeleton {
                         if(pr.getKey().equals(usuario)){
                                 // Itera sobre libros prestados y los devuelve
                                 for(Book b : pr.getValue()){
-                                        inventario.put(b.getISSN(), inventario.get(b.getISSN()) + 1);
-                                        pr.getValue().remove(b);
+                                        if(inventario.containsKey(b.getISSN()))
+                                                inventario.put(b.getISSN(), inventario.get(b.getISSN()) + 1);
+                                        else
+                                                inventario.put(b.getISSN(), 1);
                                 }
+                                prestamos.remove(usuario);
                         }
                 }
         }

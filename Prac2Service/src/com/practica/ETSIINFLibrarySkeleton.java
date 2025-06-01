@@ -27,7 +27,7 @@ public class ETSIINFLibrarySkeleton {
         // Mapa que guarda préstamos de usuarios usando nombre usuario como clave
         private static Map<String,List<Book>> prestamos = new ConcurrentHashMap<>();
         // Mapa que guarda usuarios locales (solo admin)
-        private static Map<String,String> localUsers = new HashMap<>();
+        private static Map<String,String> localUsers = new ConcurrentHashMap<>();
         // Gestor del usuario actual
         private static String usuarioActual = null;
         private static Integer sesionesTotales = 0;
@@ -78,8 +78,12 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'borrowBook'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         String issn = borrowBook.getArgs0();
-                        if(libros.containsKey(issn) && inventario.get(issn) > 0){
+                        if(libros.containsKey(issn) && inventario.containsKey(issn) 
+                        && inventario.get(issn) > 0){
                                 inventario.put(issn, inventario.get(issn) - 1);
                                 List<Book> listaLibros;
                                 // Comprueba los préstamos del usuario actual
@@ -119,6 +123,9 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'returnBook'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         String issn = returnBook.getArgs0();
                         // Comprueba si el ISSN pertenece a un libro en la biblioteca
                         if(!libros.containsKey(issn)) 
@@ -128,18 +135,16 @@ public class ETSIINFLibrarySkeleton {
                         // Busca para comprobar si se ha prestado el libro
                         List<Book> listaPrestamos = prestamos.get(usuarioActual);
                         Book b = buscarLibroISSN(issn, listaPrestamos);
-                        if(b != null){
-                                // Elimina el préstamo e inserta la nueva lista de préstamos
-                                listaPrestamos.remove(b);
-                                prestamos.put(usuarioActual, listaPrestamos);
-                                // Actualiza el inventario
-                                inventario.put(issn, inventario.get(issn) + 1);
-                                // Indica que la operación ha sido exitosa
-                                r.setResponse(true);
-                        }
-                        else{
+                        if(b == null){
                                 throw new Exception("El usuario no ha cogido prestado ese libro");
                         }
+                        // Elimina el préstamo e inserta la nueva lista de préstamos
+                        listaPrestamos.remove(b);
+                        prestamos.put(usuarioActual, listaPrestamos);
+                        // Actualiza el inventario
+                        inventario.put(issn, inventario.get(issn) + 1);
+                        // Indica que la operación ha sido exitosa
+                        r.setResponse(true);
                 }
                 catch(Exception e){
                         System.out.println("Operacion 'returnBook' fallida: " 
@@ -192,6 +197,9 @@ public class ETSIINFLibrarySkeleton {
                 Response resp = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'removeBook'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         // Determina si el usuario tiene los privilegios adecuados
                         if(!usuarioActual.equals("admin")){
                                 throw new Exception("El usuario no tiene los permisos suficientes");
@@ -229,6 +237,9 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'deleteUser'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         // Comprueba si es admin
                         if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
@@ -275,6 +286,10 @@ public class ETSIINFLibrarySkeleton {
                 // Código principal
                 try{
                         System.out.println("Se ha iniciado la operacion 'addUser'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
+                        // Comprueba si el usuario es el admin
                         if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esa operación");
                         }
@@ -317,6 +332,9 @@ public class ETSIINFLibrarySkeleton {
                 GetBookResponse gbresp = new GetBookResponse();
                 try{
                         System.out.println("Se ha iniciado la operacion 'getBook'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         String issn = getBook.getArgs0();
                         if(libros.containsKey(issn)){
                                 gbresp.set_return(libros.get(issn));
@@ -346,6 +364,9 @@ public class ETSIINFLibrarySkeleton {
                 ListBooksResponse lbr = new ListBooksResponse();
                 try{
                         System.out.println("Se ha iniciado la operacion 'listBooks'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         for(Map.Entry<String, Book> l : libros.entrySet()){
                                 bl.addBookNames(l.getValue().getName());
                                 bl.addIssns(l.getKey());
@@ -375,10 +396,15 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'changePassword'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         PasswordPair pp = changePassword.getArgs0();
                         // Si se trata del admin cambia en local
-                        if(usuarioActual == "admin") 
+                        if(usuarioActual.equals("admin")) {
                                 localUsers.put("admin", pp.getNewpwd());
+                                System.out.println("Nueva contraseña admin: "+localUsers.get("admin"));  
+                        }
                         else{
                                 // Ejecuta la operación externa
                                 com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.ChangePassword extChpw 
@@ -390,8 +416,10 @@ public class ETSIINFLibrarySkeleton {
                                 extChpw.setChangePassword(extChpwBE);
                                 ChangePasswordResponseE chpwE = upmAuth.changePassword(extChpw);
                                 // comprueba si la operación ha sido exitosa
-                                r.setResponse(chpwE.get_return().getResult());
+                                if(!chpwE.get_return().getResult())
+                                        throw new Exception("Operación externa fallida");
                         }
+                        r.setResponse(true);
                 }
                 catch(Exception e){
                         System.out.println("Operacion 'changePassword' fallida: " 
@@ -416,14 +444,17 @@ public class ETSIINFLibrarySkeleton {
                 Response res = new Response();
                 try{
                         User user = login.getArgs0();
-                        //log.error("El usuario es "+user.getName());
-                        // Si es admin autentica en local
-                        if(user.getName().equals("admin")){
-                            if(!user.getPwd().equals(localUsers.get("admin")))
+                        // Cmprueba si hay ya un usuario autenticado
+                        if(usuarioActual != null && !usuarioActual.equals(user.getName())){
+                                throw new Exception("La sesión no es válida");
+                        }
+                        // Si no hay sesión activa y es admin autentica en local
+                        else if(usuarioActual == null && user.getName().equals("admin")
+                        && !user.getPwd().equals(localUsers.get("admin"))){
                                 throw new Exception("Contrasena de admin incorrecta");
                         }
                         // Si no es admin autentica usando el servicio externo
-                        else{
+                        else if(usuarioActual == null && !user.getName().equals("admin")){
                                 // Prepara el servicio externo
                                 com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login extLogin 
                                 = new com.cliente.UPMAuthenticationAuthorizationWSSkeletonStub.Login();
@@ -465,6 +496,9 @@ public class ETSIINFLibrarySkeleton {
                 Response r = new Response();
                 try{
                         System.out.println("Se ha iniciado la operacion 'addBook'");
+                        // Comprueba si hay autenticación
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         // Comprueba si el usuario es admin
                         if(!usuarioActual.equals("admin")){
                                 throw new Exception("No tienes los privilegios suficientes para ejecutar esta operación");
@@ -504,6 +538,8 @@ public class ETSIINFLibrarySkeleton {
                 BookList bl = new BookList();
                 try{
                         System.out.println("Se ha iniciado la operacion 'getBooksFromAuthor'");
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         Author author = getBooksFromAuthor.getArgs0();
                         for(Map.Entry<String, Book> entry : libros.entrySet()){
                                 Book b = entry.getValue();
@@ -536,6 +572,8 @@ public class ETSIINFLibrarySkeleton {
                 BookList bl = new BookList();
                 try{
                         System.out.println("Se ha iniciado la operacion 'listBorrowedBooks'");
+                        if(usuarioActual == null)
+                                throw new Exception("El usuario no está autenticado");
                         if(!prestamos.containsKey(usuarioActual))
                                 throw new Exception("El usuario indicado no tiene préstamos");
                         // Obtiene la lista de préstamos e itera sobre ella

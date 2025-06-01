@@ -1,1 +1,0 @@
-java -cp "build/lib/GeometryService-test-client.jar:$AXIS2_HOME/lib/*" sos.t3.a31.demo.client.Cliente

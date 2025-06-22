@@ -6,6 +6,16 @@ $AXIS2_HOME/bin/wsdl2java.sh -uri UpmAuthenticationAuthorization.wsdl -wv 2.0 -p
 // Arrancar el servidor ()
 $AXIS2_HOME/bin
 
+// COMANDOS ACTIVACIÓN Y EJECUCIÓN
+
+// servicio
+ant clean
+ant jar.all
+ant server.start
+// cliente
+ant clean
+ant run
+
 // CODE SERVER PREPARACIÓN (MÁQUINA VIRTUAL)
 curl -fsSL https://code-server.dev/install.sh | sh
 code-server --bind-addr 0.0.0.0:8081

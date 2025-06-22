@@ -45,10 +45,13 @@ public class ETSIINFLibrarySkeleton {
         }
         // MÉTODOS AUXILIARES
         // Método auxiliar para buscar un libro en una lista en base al ISSN
-        private Book buscarLibroISSN(String issn, List<Book> libros){
-                for(Book l : libros)
-                        if(l.getISSN().equals(issn)) return l;
-                return null;
+        private int buscarLibroISSN(String issn, List<Book> libros){
+                int res = 0;
+                for(Book l : libros){
+                        if(l.getISSN().equals(issn)) return res;
+                        res++;
+                }
+                return -1;
         }
         // Método auxiliar para eliminar todos los préstamos de un usuario y devolveros al inventario
         private void eliminarPrestamosUsuario(String usuario){
@@ -137,12 +140,12 @@ public class ETSIINFLibrarySkeleton {
                                 throw new Exception("El usuario no tiene préstamos activos");
                         // Busca para comprobar si se ha prestado el libro
                         List<Book> listaPrestamos = prestamos.get(usuarioActual);
-                        Book b = buscarLibroISSN(issn, listaPrestamos);
-                        if(b == null){
+                        int index = buscarLibroISSN(issn, listaPrestamos);
+                        if(index == -1){
                                 throw new Exception("El usuario no ha cogido prestado ese libro");
                         }
                         // Elimina el préstamo e inserta la nueva lista de préstamos
-                        listaPrestamos.remove(b);
+                        listaPrestamos.remove(index);
                         prestamos.put(usuarioActual, listaPrestamos);
                         // Actualiza el inventario
                         inventario.put(issn, inventario.get(issn) + 1);

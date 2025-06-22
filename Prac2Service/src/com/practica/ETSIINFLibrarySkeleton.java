@@ -22,15 +22,15 @@ public class ETSIINFLibrarySkeleton {
         // Cliente para UPMAuthorization
         private UPMAuthenticationAuthorizationWSSkeletonStub upmAuth;
         // Mapa que guarda libros usando ISSN como clave. Emplea un mapa auxiliar de disponibilidad
-        private static Map<String,Book> libros = new LinkedHashMap<>();
+        private static List<Book> libros = new ArrayList<Book>();
         private static Map<String,Integer> inventario = new ConcurrentHashMap<>();
         // Mapa que guarda préstamos de usuarios usando nombre usuario como clave
         private static Map<String,List<Book>> prestamos = new ConcurrentHashMap<>();
         // Mapa que guarda usuarios locales (solo admin)
         private static Map<String,String> localUsers = new ConcurrentHashMap<>();
         // Gestor del usuario actual
-        private static String usuarioActual = null;
-        private static Integer sesionesTotales = 0;
+        private String usuarioActual = null;
+        private Integer sesionesTotales = 0;
         // INICIALIZACIÓN
         public ETSIINFLibrarySkeleton(){
                 try{
@@ -88,7 +88,8 @@ public class ETSIINFLibrarySkeleton {
                         if(usuarioActual == null)
                                 throw new Exception("El usuario no está autenticado");
                         String issn = borrowBook.getArgs0();
-                        if(libros.containsKey(issn) && inventario.containsKey(issn) 
+                        int pos = buscarLibroISSN(issn, libros);
+                        if(pos != -1 && inventario.containsKey(issn) 
                         && inventario.get(issn) > 0){
                                 inventario.put(issn, inventario.get(issn) - 1);
                                 List<Book> listaLibros;
@@ -99,7 +100,10 @@ public class ETSIINFLibrarySkeleton {
                                 else{
                                         listaLibros = new ArrayList<Book>();
                                 }
-                                listaLibros.add(libros.get(issn));
+                                if(buscarLibroISSN(issn, listaLibros) != -1){
+                                        throw new Exception("Ese libro ya se ha pedido prestado");
+                                }
+                                listaLibros.add(libros.get(pos));
                                 prestamos.put(usuarioActual, listaLibros);
                                 r.setResponse(true);
                         }
@@ -134,7 +138,7 @@ public class ETSIINFLibrarySkeleton {
                                 throw new Exception("El usuario no está autenticado");
                         String issn = returnBook.getArgs0();
                         // Comprueba si el ISSN pertenece a un libro en la biblioteca
-                        if(!libros.containsKey(issn)) 
+                        if(buscarLibroISSN(issn, libros) == -1) 
                                 throw new Exception("El ISSN indicado no se corresponde a ningún libro existente");
                         if(!prestamos.containsKey(usuarioActual))
                                 throw new Exception("El usuario no tiene préstamos activos");
@@ -263,6 +267,8 @@ public class ETSIINFLibrarySkeleton {
                                 throw new Exception("La operación externa ha fallado");
                         }
                         // Si realiza bien esta operación todo OK
+                        System.out.println("Se ha eliminado el usuario "+rmu.getName());
+                        localUsers.remove(rmu.getName());
                         r.setResponse(true);
                 }
                 catch(Exception e)
@@ -314,6 +320,9 @@ public class ETSIINFLibrarySkeleton {
                         if(!addURespBE.getResult()){
                                 throw new Exception("La operación externa ha fallado");
                         }
+                        System.out.println("Se ha añadido el usuario '"+ube.getName()+
+                        "' con contraseña "+addURespBE.getPassword());
+                        localUsers.put(ube.getName(), addURespBE.getPassword());
                         addURespObj.setResponse(true);
                         addURespObj.setPwd(addURespBE.getPassword());
                 }
@@ -342,8 +351,9 @@ public class ETSIINFLibrarySkeleton {
                         if(usuarioActual == null)
                                 throw new Exception("El usuario no está autenticado");
                         String issn = getBook.getArgs0();
-                        if(libros.containsKey(issn)){
-                                gbresp.set_return(libros.get(issn));
+                        int pos = buscarLibroISSN(issn, libros);
+                        if(pos != -1){
+                                gbresp.set_return(libros.get(pos));
                         }
                         else{
                                 throw new Exception("El libro indicado no existe");
@@ -373,9 +383,9 @@ public class ETSIINFLibrarySkeleton {
                         // Comprueba si hay autenticación
                         if(usuarioActual == null)
                                 throw new Exception("El usuario no está autenticado");
-                        for(Map.Entry<String, Book> l : libros.entrySet()){
-                                bl.addBookNames(l.getValue().getName());
-                                bl.addIssns(l.getKey());
+                        for(Book l : libros){
+                                bl.addBookNames(l.getName());
+                                bl.addIssns(l.getISSN());
                         }
                         bl.setResult(true);
                 }
@@ -425,6 +435,7 @@ public class ETSIINFLibrarySkeleton {
                                 if(!chpwE.get_return().getResult())
                                         throw new Exception("Operación externa fallida");
                         }
+                        localUsers.put(usuarioActual, pp.getNewpwd());
                         r.setResponse(true);
                 }
                 catch(Exception e){
@@ -450,7 +461,11 @@ public class ETSIINFLibrarySkeleton {
                 Response res = new Response();
                 try{
                         User user = login.getArgs0();
-                        // Cmprueba si hay ya un usuario autenticado
+                        // Comprueba si el usuario no ha sido eliminado
+                        if(!localUsers.containsKey(user.getName())){
+                                throw new Exception("El usuario no existe");
+                        }
+                        // Comprueba si hay ya un usuario autenticado
                         if(usuarioActual != null && !usuarioActual.equals(user.getName())){
                                 throw new Exception("La sesión no es válida");
                         }
@@ -512,13 +527,14 @@ public class ETSIINFLibrarySkeleton {
                         Book book = addBook.getArgs0();
                         String issn = book.getISSN();
                         // Comprueba si el libro existe ya o no
-                        if(libros.containsKey(issn) && inventario.containsKey(issn)){
+                        int pos = buscarLibroISSN(issn, libros);
+                        if(pos != -1 && inventario.containsKey(issn)){
                                 // Si el libro ya existe añade copia al inventario
                                 inventario.put(issn, inventario.get(issn) + 1);
                         }
                         else{
                                 // Si el libro no está crea nuevas entradas
-                                libros.put(issn, book);
+                                libros.add(0, book);
                                 inventario.put(issn, 1);
                         }
                         r.setResponse(true);
@@ -547,8 +563,7 @@ public class ETSIINFLibrarySkeleton {
                         if(usuarioActual == null)
                                 throw new Exception("El usuario no está autenticado");
                         Author author = getBooksFromAuthor.getArgs0();
-                        for(Map.Entry<String, Book> entry : libros.entrySet()){
-                                Book b = entry.getValue();
+                        for(Book b : libros){
                                 if(Arrays.asList(b.getAuthors()).contains(author.getName())){
                                         bl.addBookNames(b.getName());
                                         bl.addIssns(b.getISSN());

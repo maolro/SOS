@@ -1,0 +1,15 @@
+com/client/wrappers/EmbeddedUsuarios.class
+com/client/wrappers/EmbeddedPrestamo.class
+com/client/Libro.class
+com/client/wrappers/PrestamoPagedResponse.class
+com/client/wrappers/LibroPagedResponse.class
+com/client/wrappers/UsuarioPagedResponse.class
+com/client/ClienteLibreria$3.class
+com/client/wrappers/EmbeddedLibro.class
+com/client/ClienteLibreria$2.class
+com/client/Prestamo.class
+com/client/ClienteLibreria.class
+com/client/ClienteLibreria$4.class
+com/client/CrearPrestamoDTO.class
+com/client/ClienteLibreria$1.class
+com/client/Usuario.class

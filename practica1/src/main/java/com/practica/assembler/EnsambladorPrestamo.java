@@ -1,6 +1,6 @@
 package com.practica.assembler;
 
-import com.practica.controladores.ControladorPrestamo;
+import com.practica.controladores.ControladorUsuario;
 import com.practica.objetos.Prestamo;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -15,13 +15,14 @@ import org.springframework.stereotype.Component;
 public class EnsambladorPrestamo extends RepresentationModelAssemblerSupport<Prestamo, Prestamo> {
 
     public EnsambladorPrestamo() {
-        super(ControladorPrestamo.class, Prestamo.class);
+        super(ControladorUsuario.class, Prestamo.class);
     }
 
     @Override
     public Prestamo toModel(Prestamo entity) {
-        entity.add(linkTo(methodOn(ControladorPrestamo.class)
-            .obtenerPrestamoPorId(entity.getId())).withSelfRel());
+        entity.add(linkTo(methodOn(ControladorUsuario.class)
+            .obtenerPrestamoPorId(entity.getUsuario().getId(), 
+            entity.getId())).withSelfRel());
         
         return entity;
     }

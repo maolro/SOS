@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.practica.objetos.Prestamo;
+import com.practica.objetos.UsuarioPrestamo;
 import com.practica.objetos.Usuario;
 
 import org.springframework.data.domain.Page;
@@ -20,11 +21,12 @@ public interface RepositorioPrestamo extends JpaRepository<Prestamo, Long> {
 
     List<Prestamo> findTop5ByUsuarioOrderByFechaPrestamoDesc(Usuario usuario);
 
-    @Query("SELECT p FROM Prestamo p " +
-           "WHERE (p.usuario.id = :usuarioId) " +
-           "AND (:fechaInicio IS NULL OR p.fechaPrestamo >= :fechaInicio) " +
-           "AND (:fechaFin IS NULL OR p.fechaPrestamo <= :fechaFin)")
-    Page<Prestamo> findByUsuarioIdAndFechaRange(
+    @Query("SELECT * FROM Prestamo " +
+           "WHERE (usuario.id = :usuarioId) " +
+           "AND (:fechaInicio IS NULL OR fechaPrestamo >= :fechaInicio) " +
+           "AND (:fechaFin IS NULL OR fechaPrestamo <= :fechaFin)" +
+           "AND fechaDevolucionReal IS NULL")
+    Page<Prestamo> prestamosActualesPorFecha(
             @Param("usuarioId") Long usuarioId,
             @Param("fechaInicio") LocalDate fechaInicio,
             @Param("fechaFin") LocalDate fechaFin,

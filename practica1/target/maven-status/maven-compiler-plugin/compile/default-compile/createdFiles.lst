@@ -1,0 +1,10 @@
+com/practica/assembler/EnsambladorPrestamo.class
+com/practica/objetos/Usuario.class
+com/practica/objetos/Libro.class
+com/practica/controladores/ControladorLibro.class
+com/practica/PracticaApp.class
+com/practica/assembler/EnsambladorUsuario.class
+com/practica/assembler/EnsambladorLibro.class
+com/practica/objetos/Prestamo.class
+com/practica/servicios/ServicioLibro.class
+com/practica/repositorios/RepositorioLibro.class

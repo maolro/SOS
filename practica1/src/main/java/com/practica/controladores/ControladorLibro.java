@@ -50,7 +50,8 @@ public class ControladorLibro {
             @RequestParam(required = false) String titulo,
             @RequestParam(required = false) Boolean disponible,
             @RequestParam(defaultValue = "0", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "2", required = false) int size) {
+        
         // Se buscan todos los libros, los cuales se pueden filtrar según título y disponible
         Page<Libro> libros = libroService.buscarLibros(page, size, titulo, disponible);
         // Se devuelve el objeto paginado con enlaces usando el ensamblador
@@ -61,7 +62,9 @@ public class ControladorLibro {
     public ResponseEntity<Libro> obtenerLibroPorId(@PathVariable Long id) {
         // Se busca el libro indicado. Si el id proporcionado no existe se devolverá una excepción
         Libro libro = libroService.obtenerLibroPorId(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el libro"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+            "No se ha encontrado el libro"));
+        
         // Se añade un enlace al libro devuelto
         libro.add(linkTo(methodOn(ControladorLibro.class).obtenerLibroPorId(id)).withSelfRel());
         return ResponseEntity.ok(libro);

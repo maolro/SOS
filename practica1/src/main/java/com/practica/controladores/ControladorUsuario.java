@@ -173,7 +173,7 @@ public class ControladorUsuario {
 
     // CREACIÓN DE PRÉSTAMOS (POST)
     @PostMapping("/{id}/prestamos")
-    public ResponseEntity<?> crearPrestamo(@PathVariable Integer id,
+    public ResponseEntity<?> crearPrestamo(@PathVariable Long id,
         @Valid @RequestBody UsuarioPrestamo usuarioPrestamo, BindingResult result) {
         // Comprueba si el objeto usuarioPrestamo es válido
         if (result.hasErrors()) {
@@ -201,21 +201,22 @@ public class ControladorUsuario {
     // OBTENCIÓN DE PRÉSTAMOS ACTUALES CON FILTRO DE FECHAS
     @GetMapping(value = "/{id}/prestamos", produces = { "application/json", "application/xml" })
     public ResponseEntity<PagedModel<Prestamo>> obtenerPrestamos(
+            @PathVariable Long id,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<Prestamo> prestamos = prestamoService.buscarPrestamos(page, size, id, fechaInicio, fechaFin);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(prestamos, ensambladorPrestamo));
+        Page<Prestamo> prestamos = servicioPrestamo.buscarPrestamos(page, size, id, fechaInicio, fechaFin);
+        return ResponseEntity.ok(pagedResourcesAssemblerPrestamo.toModel(prestamos, ensambladorPrestamo));
     }
 
     // OBTENCIÓN DE UN PRÉSTAMO ESPECÍFICO
     @GetMapping(value = "/{usuarioId}/prestamos/{prestamoId}", 
     produces = { "application/json", "application/xml", "application/hal+json" })
-    public ResponseEntity<Prestamo> obtenerPrestamoPorId(@PathVariable Long usuarioId,
+    public ResponseEntity<?> obtenerPrestamoPorId(@PathVariable Long usuarioId,
     @PathVariable Long prestamoId) {
-        Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamo_id)
+        Prestamo prestamo = servicioPrestamo.obtenerPrestamoPorId(prestamoId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
             "No se ha encontrado el préstamo"));
         
@@ -226,8 +227,8 @@ public class ControladorUsuario {
         }
         
         // Devuelve el resultado correcto
-        prestamo.add(linkTo(methodOn(ControladorPrestamo.class)
-                .obtenerPrestamoPorId(usuario_id, prestamo_id)).withSelfRel());
+        prestamo.add(linkTo(methodOn(ControladorUsuario.class)
+                .obtenerPrestamoPorId(usuarioId, prestamoId)).withSelfRel());
         return ResponseEntity.ok(prestamo);
     }
 
@@ -235,7 +236,7 @@ public class ControladorUsuario {
     @DeleteMapping("/{usuarioId}/prestamos/{prestamoId}")
     public ResponseEntity<?> eliminarPrestamo(@PathVariable Long usuarioId,
     @PathVariable Long prestamoId) {
-        Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamo_id)
+        Prestamo prestamo = servicioPrestamo.obtenerPrestamoPorId(prestamoId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
             "No se ha encontrado el préstamo"));
 
@@ -245,25 +246,25 @@ public class ControladorUsuario {
                 .body("El préstamo no pertenece al usuario.");
         }
 
-        prestamoService.eliminarPrestamo(prestamo);
+        servicioPrestamo.eliminarPrestamo(prestamo);
         return ResponseEntity.noContent().build();
     }
 
     // AMPLIACIÓN O DEVOLUCIÓN DE UN PRÉSTAMO
     @PutMapping("/{usuarioId}/prestamos/{prestamoId}")
     public ResponseEntity<?> actualizarPrestamo(@PathVariable Long usuarioId,
-    @PathVariable Long prestamoId, @Valid @RequestBody Prestamo prestamo) {
-        Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamo_id)
+    @PathVariable Long prestamoId, @Valid @RequestBody Prestamo prestamoNuevo) {
+        Prestamo prestamo = servicioPrestamo.obtenerPrestamoPorId(prestamoId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
             "No se ha encontrado el préstamo"));
 
         // Comprueba si el usuario es válido
-        if (!prestamo.getUsuario().getId().equals(usuarioId)) {
+        if (!prestamoNuevo.getUsuario().getId().equals(usuarioId)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body("El préstamo no pertenece al usuario.");
         }
 
-        prestamoService.eliminarPrestamo(prestamo);
+        servicioPrestamo.eliminarPrestamo(prestamo);
         return ResponseEntity.noContent().build();
     }
     /*

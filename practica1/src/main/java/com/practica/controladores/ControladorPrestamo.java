@@ -27,7 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 
 @RestController
-@RequestMapping("/api/v1/prestamos")
+@RequestMapping("/api/v1/usuarios/{usuario_id}/prestamos")
 public class ControladorPrestamo {
 
     private final ServicioPrestamo prestamoService;
@@ -49,13 +49,13 @@ public class ControladorPrestamo {
 
     @GetMapping(value = "", produces = { "application/json", "application/xml" })
     public ResponseEntity<PagedModel<Prestamo>> obtenerPrestamos(
-            @RequestParam(required = false) Long usuarioId,
+            @PathVariable Long usuario_id,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<Prestamo> prestamos = prestamoService.buscarPrestamos(page, size, usuarioId, fechaInicio, fechaFin);
+        Page<Prestamo> prestamos = prestamoService.buscarPrestamos(page, size, usuario_id, fechaInicio, fechaFin);
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(prestamos, ensambladorPrestamo));
     }
 
@@ -86,7 +86,7 @@ public class ControladorPrestamo {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/devolucion")
+    @PutMapping("/{id}")
     public ResponseEntity<?> devolverPrestamo(@PathVariable Long id){
         Date fechaActual = new Date();
         Prestamo prestamo = prestamoService.obtenerPrestamoPorId(id)
@@ -99,7 +99,7 @@ public class ControladorPrestamo {
         return ResponseEntity.ok().body(prestamo);
     }
     // Función que gestiona la ampliación del préstamo
-    @PostMapping("/{id}/ampliar")
+    @PutMapping("/{id}")
     public ResponseEntity<?> ampliarPrestamo(@PathVariable Long id, @RequestParam(required = true) Integer dias){
         // Se obtiene el préstamo con el id indicado
         Prestamo prestamo = prestamoService.obtenerPrestamoPorId(id)

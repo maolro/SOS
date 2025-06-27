@@ -1,0 +1,17 @@
+com\practica\repositorios\RepositorioLibro.class
+com\practica\repositorios\RepositorioPrestamo.class
+com\practica\controladores\ControladorUsuario.class
+com\practica\servicios\ServicioLibro.class
+com\practica\controladores\ControladorPrestamo.class
+com\practica\repositorios\RepositorioUsuario.class
+com\practica\controladores\ControladorLibro.class
+com\practica\objetos\Prestamo.class
+com\practica\servicios\ServicioUsuario.class
+com\practica\PracticaApp.class
+com\practica\objetos\CrearPrestamoDTO.class
+com\practica\objetos\Libro.class
+com\practica\assembler\EnsambladorPrestamo.class
+com\practica\servicios\ServicioPrestamo.class
+com\practica\assembler\EnsambladorLibro.class
+com\practica\assembler\EnsambladorUsuario.class
+com\practica\objetos\Usuario.class

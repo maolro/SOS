@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-
 @Entity
 @Table(name = "usuarios")
 public class Usuario extends RepresentationModel<Usuario>{

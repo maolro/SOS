@@ -7,3 +7,11 @@ mvn clean package
 mvn spring-boot:run
 
 3. Abrir Postman
+
+Conexion postgres
+
+psql -U your_username -d your_database
+
+# Ver todas las tablas
+\dt
+

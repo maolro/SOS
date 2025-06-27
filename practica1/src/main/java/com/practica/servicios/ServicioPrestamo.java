@@ -34,28 +34,25 @@ public class ServicioPrestamo {
         return repositorio.findAll();
     }
 
-    public Optional<Prestamo> obtenerPrestamoPorId(Long id) {
-        return repositorio.findById(id);
+    public Optional<Prestamo> obtenerPrestamoPorId(Long prestamoId) {
+        return repositorio.findById(prestamoId);
     }
 
-    public Prestamo crearPrestamo(CrearPrestamoDTO prestamoDTO) {
+    public Prestamo crearPrestamo(UsuarioPrestamo upId, Usuario usuario, Libro libro) {
         Prestamo prestamo = new Prestamo();
-        //Actualizar los campos del préstamo a los ids proporcionados
-        Usuario usuario = repositorioUsuario.findById(prestamoDTO.getUsuario_id())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-        Libro libro = repositorioLibro.findById(prestamoDTO.getLibro_id())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Libro no encontrado"));
-        // Si ambas claves foráneas existen entonces se asignan
+
+        // Se asignan las claves y valores del préstamo
         prestamo.setUsuario(usuario);
         prestamo.setLibro(libro);
-        prestamo.setFechaPrestamo(prestamoDTO.getFechaPrestamo());
-        // Calcula la fecha de devolución prevista si no se ha establecido
-        if (prestamo.getFechaDevolucionPrevista() == null && prestamo.getFechaPrestamo() != null) {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(prestamo.getFechaPrestamo());
-            cal.add(Calendar.DAY_OF_MONTH, 14);
-            prestamo.setFechaDevolucionPrevista(cal.getTime());
-        }
+        prestamo.setFechaPrestamo(upId.getFechaPrestamo());
+        
+        // Calcula la fecha de devolución prevista
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(prestamo.getFechaPrestamo());
+        cal.add(Calendar.DAY_OF_MONTH, 14);
+        prestamo.setFechaDevolucionPrevista(cal.getTime());
+
+        // Se guarda el préstamo en el repositorio
         return repositorio.save(prestamo);
     }
 
@@ -74,8 +71,8 @@ public class ServicioPrestamo {
         return repositorio.save(base);
     }
 
-    public void eliminarPrestamo(Long id) {
-        repositorio.deleteById(id);
+    public void eliminarPrestamo(Prestamo prestamo) {
+        repositorio.delete(prestamo);
     }
 
     public Page<Prestamo> buscarPrestamos(int page, int size, Long usuarioId, String fechaInicioStr, String fechaFinStr) {
@@ -91,11 +88,12 @@ public class ServicioPrestamo {
             if (fechaFinStr != null) {
                 fechaFin = LocalDate.parse(fechaFinStr);
             }
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             throw new IllegalArgumentException("Formato de fecha inválido. Usa yyyy-MM-dd.");
         }
 
-        return repositorio.findByUsuarioIdAndFechaRange(usuarioId, fechaInicio, fechaFin, pageable);
+        return repositorio.prestamosActualesPorFecha(usuarioId, fechaInicio, fechaFin, pageable);
     }
 
     public List<Prestamo> buscarPrestamosActivosPorUsuario(Long usuarioId) {

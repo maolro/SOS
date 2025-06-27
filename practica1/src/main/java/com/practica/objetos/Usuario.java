@@ -7,8 +7,7 @@ import org.springframework.hateoas.RepresentationModel;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "usuarios")
@@ -18,10 +17,10 @@ public class Usuario extends RepresentationModel<Usuario>{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El nombre de usuario es obligatorio.")
+    @NotNull(message = "El nombre de usuario es obligatorio.")
     private String nombreUsuario;
 
-    @NotBlank(message = "La matrícula es obligatoria.")
+    @NotNull(message = "La matrícula es obligatoria.")
     private String matricula;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")

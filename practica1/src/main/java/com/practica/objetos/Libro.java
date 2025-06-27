@@ -5,7 +5,7 @@ import org.springframework.hateoas.RepresentationModel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "libros")
@@ -15,15 +15,15 @@ public class Libro extends RepresentationModel<Libro> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El título es obligatorio.")
+    @NotNull(message = "El título es obligatorio.")
     private String titulo;
 
-    @NotBlank(message = "El autor es obligatorio.")
+    @NotNull(message = "El autor es obligatorio.")
     private String autor;
 
     private String edicion;
 
-    @NotBlank(message = "El ISBN es obligatorio.")
+    @NotNull(message = "El ISBN es obligatorio.")
     private String isbn;
 
     private String editorial;

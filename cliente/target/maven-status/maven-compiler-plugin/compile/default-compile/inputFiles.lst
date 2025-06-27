@@ -1,0 +1,11 @@
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/ClienteLibreria.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/CrearPrestamoDTO.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/Libro.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/Prestamo.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/Usuario.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/EmbeddedLibro.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/EmbeddedPrestamo.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/EmbeddedUsuarios.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/LibroPagedResponse.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/PrestamoPagedResponse.java
+/home/lsduser/Público/github/SOS/cliente/src/main/java/com/client/wrappers/UsuarioPagedResponse.java

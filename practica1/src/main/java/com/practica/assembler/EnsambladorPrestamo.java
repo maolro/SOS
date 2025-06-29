@@ -21,7 +21,7 @@ public class EnsambladorPrestamo extends RepresentationModelAssemblerSupport<Pre
     @Override
     public Prestamo toModel(Prestamo entity) {
         entity.add(linkTo(methodOn(ControladorUsuario.class)
-            .obtenerPrestamoPorId(entity.getUsuario().getId(), 
+            .obtenerPrestamoPorId(entity.getUsuario().getMatricula(), 
             entity.getId())).withSelfRel());
         
         return entity;

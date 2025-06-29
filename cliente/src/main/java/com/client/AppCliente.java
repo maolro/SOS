@@ -12,7 +12,7 @@ public class AppCliente {
         
         // PRUEBAS DE CREACIÓN
         System.out.println("\n1. Crear usuario válido");
-        Usuario usuario1 = client.crearUsuario("Ana Pérez", "A123456", 
+        UsuarioResp usuario1 = client.crearUsuario("Ana Pérez", "A123456", 
                 "2000-04-20", "ana.perez@ejemplo.com");
         
         System.out.println("\n2. Crear usuario con matrícula repetida");
@@ -28,13 +28,13 @@ public class AppCliente {
         client.crearUsuario("Juan López", "B789012", "1999-07-03", "ana.perez@ejemplo.com");
         
         // Crear más usuarios para pruebas
-        Usuario usuario2 = client.crearUsuario("Juan López", "B789012", 
+        UsuarioResp usuario2 = client.crearUsuario("Juan López", "B789012", 
                 "1999-07-03", "juan.lopez@ejemplo.com");
-        Usuario usuario3 = client.crearUsuario("Carlos Ruiz", "C456789", 
+        UsuarioResp usuario3 = client.crearUsuario("Carlos Ruiz", "C456789", 
                 "1998-05-15", "carlos.ruiz@ejemplo.com");
-        Usuario usuario4 = client.crearUsuario("María García", "D012345", 
+        UsuarioResp usuario4 = client.crearUsuario("María García", "D012345", 
                 "2001-02-28", "maria.garcia@ejemplo.com");
-        Usuario usuario5 = client.crearUsuario("Luisa Martínez", "E678901", 
+        UsuarioResp usuario5 = client.crearUsuario("Luisa Martínez", "E678901", 
                 "2002-11-10", "luisa.martinez@ejemplo.com");
         
         // PRUEBAS DE GET
@@ -237,8 +237,8 @@ public class AppCliente {
         Prestamo prestamo4 = client.crearPrestamo(usuario1.getId(), libro2.getId());
         
         // Devolver algunos préstamos para tener histórico
-        client.devolverPrestamo(prestamo3.getId());
-        client.devolverPrestamo(prestamo4.getId());
+        client.devolverPrestamo(prestamo3.getUsuario().getId(), prestamo3.getId());
+        client.devolverPrestamo(prestamo4.getUsuario().getId(), prestamo4.getId());
         
         System.out.println("\n12. Listar préstamos actuales de usuario");
         client.listarPrestamosUsuario(usuario1.getId(), null, null, null, null);
@@ -270,7 +270,7 @@ public class AppCliente {
         
         // PRUEBAS DE AMPLIACIÓN
         System.out.println("\n20. Ampliar préstamo válido");
-        client.ampliarPrestamo(usuario1.getId(), prestamo1.getId());
+        client.ampliarPrestamo(prestamo1.getUsuario().getId(), prestamo1.getId());
         
         System.out.println("\n21. Ampliar préstamo inexistente");
         client.ampliarPrestamo(usuario1.getId(), 999L);
@@ -279,14 +279,14 @@ public class AppCliente {
         client.ampliarPrestamo(usuario1.getId(), prestamo2.getId());
         
         System.out.println("\n23. Ampliar préstamo ya devuelto");
-        client.ampliarPrestamo(usuario1.getId(), prestamo1.getId());
+        client.ampliarPrestamo(prestamo1.getUsuario().getId(), prestamo1.getId());
         
         System.out.println("\n24. Ampliar préstamo ya ampliado");
-        client.ampliarPrestamo(usuario1.getId(), prestamo1.getId());
+        client.ampliarPrestamo(prestamo1.getUsuario().getId(), prestamo1.getId());
         
         // PRUEBAS DE DEVOLUCIÓN
         System.out.println("\n25. Devolver préstamo válido");
-        client.devolverPrestamo(usuario1.getId(), prestamo1.getId());
+        client.devolverPrestamo(prestamo1.getUsuario().getId(), prestamo1.getId());
         
         System.out.println("\n26. Devolver préstamo inexistente");
         client.devolverPrestamo(usuario1.getId(), 999L);
@@ -295,20 +295,19 @@ public class AppCliente {
         client.devolverPrestamo(usuario1.getId(), prestamo2.getId());
         
         System.out.println("\n28. Devolver préstamo ya devuelto");
-        client.devolverPrestamo(usuario1.getId(), prestamo1.getId());
+        client.devolverPrestamo(prestamo1.getUsuario().getId(), prestamo1.getId());
         
         // ===== PRUEBAS FINALES =====
         System.out.println("\n--- PRUEBAS FINALES ---");
         
         System.out.println("\n1. Obtener actividad de usuario");
-        client.obtenerActividadUsuario(usuario1 != null ? usuario1.getId() : 1L);
+        client.obtenerActividadUsuario(usuario1.getId(), null, null);
         
         System.out.println("\n2. Obtener actividad de usuario inexistente");
-        client.obtenerActividadUsuario(999L);
+        client.obtenerActividadUsuario(999L, null, null);
 
         // ===== LIMPIEZA =====
         System.out.println("\nEliminando recursos de prueba...");
-        if (prestamo2 != null) client.devolverPrestamo(prestamo2.getId());
         if (libro1 != null) client.eliminarLibro(libro1.getId());
         if (libro2 != null) client.eliminarLibro(libro2.getId());
         if (libro3 != null) client.eliminarLibro(libro3.getId());

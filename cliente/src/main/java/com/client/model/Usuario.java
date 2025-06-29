@@ -6,7 +6,6 @@ public class Usuario {
     private String matricula;
     private String fechaNacimiento;
     private String correoElectronico;
-    private ResourceLink _links;
 
     public Usuario() {}
 
@@ -37,10 +36,6 @@ public class Usuario {
         return correoElectronico;
     }
 
-    public ResourceLink getLinks() {
-        return _links;
-    }
-
     public void setId(Long id) {
         this.id = id;
     }
@@ -59,21 +54,5 @@ public class Usuario {
 
     public void setCorreoElectronico(String correoElectronico) {
         this.correoElectronico = correoElectronico;
-    }
-
-    public void setLinks(ResourceLink links) {
-        this._links = links;
-    }
-
-    @Override
-    public String toString() {
-        return "Usuario: {" +
-                "id=" + id +
-                ", nombreUsuario='" + nombreUsuario + '\'' +
-                ", matricula='" + matricula + '\'' +
-                ", fechaNacimiento='" + fechaNacimiento + '\'' +
-                ", correoElectronico='" + correoElectronico + '\'' +
-                ", enlace='" + _links.getSelf().getHref() + '\'' +
-                '}';
     }
 }

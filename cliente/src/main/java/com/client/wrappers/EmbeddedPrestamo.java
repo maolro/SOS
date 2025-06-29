@@ -2,7 +2,7 @@ package com.client.wrappers;
 
 import java.util.List;
 
-import com.client.Prestamo;
+import com.client.model.Prestamo;
 
 public class EmbeddedPrestamo {
     private List<Prestamo> prestamoList;

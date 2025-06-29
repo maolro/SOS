@@ -5,8 +5,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.practica.assembler.EnsambladorLibro;
 import com.practica.objetos.Libro;
-import com.practica.servicios.ServicioLibro;
-import com.practica.repositorios.RepositorioLibro;
+import com.practica.servicios.*;
 
 import jakarta.validation.Valid;
 
@@ -31,18 +30,18 @@ public class ControladorLibro {
     private final ServicioLibro libroService;
     private final PagedResourcesAssembler<Libro> pagedResourcesAssembler;
     private final EnsambladorLibro ensambladorLibro;
-    private final RepositorioLibro repositorioLibro;
+    private final ServicioPrestamo servicioPrestamo;
 
     public ControladorLibro(
         ServicioLibro libroService,
-        RepositorioLibro repositorioLibro,
         PagedResourcesAssembler<Libro> pagedResourcesAssembler,
-        EnsambladorLibro ensambladorLibro) {
+        EnsambladorLibro ensambladorLibro,
+        ServicioPrestamo servicioPrestamo) {
 
         this.libroService = libroService;
-        this.repositorioLibro = repositorioLibro;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.ensambladorLibro = ensambladorLibro;
+        this.servicioPrestamo = servicioPrestamo;
     }
     // Esta función devolverá todos los libros disponibles como un JSON con paginación y enlaces
     @GetMapping(value = "", produces = { "application/json", "application/xml" })
@@ -59,7 +58,7 @@ public class ControladorLibro {
     }
     // Esta función devolverá el recurso Libro con el id indicado
     @GetMapping(value = "/{id}", produces = { "application/json", "application/xml", "application/hal+json" })
-    public ResponseEntity<Libro> obtenerLibroPorId(@PathVariable Long id) {
+    public ResponseEntity<Libro> obtenerLibroPorId(@PathVariable String id) {
         // Se busca el libro indicado. Si el id proporcionado no existe se devolverá una excepción
         Libro libro = libroService.obtenerLibroPorId(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
@@ -83,31 +82,51 @@ public class ControladorLibro {
             return ResponseEntity.badRequest().body(errores);
         }
         // Si se ha creado exitosamente entonces el libro se guarda en el repositorio
-        libro = repositorioLibro.save(libro);
-        // Se devuelve 201 CREATED además del objeto libro en formato JSON
-        return ResponseEntity.status(HttpStatus.CREATED).body(libro);
+        try {
+            libro = libroService.crearLibro(libro);
+            // Se devuelve 201 CREATED y el enlace en la cabecera
+            return ResponseEntity.created(linkTo(methodOn(ControladorLibro.class)
+                .obtenerLibroPorId(libro.getISBN())).toUri()).build();
+        } 
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
     // Esta función elimina el libro con el ID indicado
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarLibro(@PathVariable Long id) {
-        libroService.eliminarLibro(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> eliminarLibro(@PathVariable String id) {
+        try{
+            libroService.eliminarLibro(id, servicioPrestamo);
+            return ResponseEntity.noContent().build();
+        }
+        catch(NullPointerException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+        }
+        catch(IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", e.getMessage()));
+        }
     }
     // Esta función actualiza los campos del libro con id proporcionado
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarLibro(@PathVariable Long id, @RequestBody Libro libro) {
+    public ResponseEntity<?> actualizarLibro(@PathVariable String id, @RequestBody Libro libro) {
         try {
             Libro actualizado = libroService.actualizarLibro(id, libro);
             return ResponseEntity.ok(actualizado);
-        } catch (NoSuchElementException e) {
+        } 
+        catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (IllegalArgumentException e) {
+                .body(Map.of("error", e.getMessage()));
+        } 
+        catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
+                .body(Map.of("error", e.getMessage()));
+        } 
+        catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error interno del servidor"));
+                .body(Map.of("error", "Error interno del servidor"));
         }
     }
 }

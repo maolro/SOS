@@ -21,7 +21,7 @@ public class EnsambladorUsuario extends RepresentationModelAssemblerSupport<Usua
     public Usuario toModel(Usuario entity) {
 
         entity.add(linkTo(methodOn(ControladorUsuario.class)
-        .obtenerUsuarioPorId(entity.getId())).withSelfRel());
+        .obtenerUsuarioPorId(entity.getMatricula())).withSelfRel());
         
         return entity;
     }

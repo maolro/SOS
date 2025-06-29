@@ -21,7 +21,7 @@ public class EnsambladorLibro extends RepresentationModelAssemblerSupport<Libro,
     @Override
     public Libro toModel(Libro entity) {
         entity.add(linkTo(methodOn(ControladorLibro.class)
-            .obtenerLibroPorId(entity.getId())).withSelfRel());
+            .obtenerLibroPorId(entity.getISBN())).withSelfRel());
         return entity;
     }
 }

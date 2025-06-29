@@ -5,7 +5,6 @@ import java.util.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
 import org.springframework.stereotype.Service;
 
 import com.practica.objetos.*;
@@ -23,7 +22,7 @@ public class ServicioUsuario {
         return repositorio.findAll();
     }
 
-    public Optional<Usuario> obtenerUsuarioPorId(Long id) {
+    public Optional<Usuario> obtenerUsuarioPorId(String id) {
         return repositorio.findById(id);
     }
 
@@ -31,13 +30,13 @@ public class ServicioUsuario {
         return repositorio.save(usuario);
     }
 
-    public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
+    public Usuario actualizarUsuario(String id, Usuario usuarioActualizado) {
         // Busca el usuario en el repositorio
         Usuario usuarioBase = repositorio.findById(id)
         .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
         // Comprueba si se ha intentado cambiar la matrícula
         if (usuarioActualizado.getMatricula() != null &&
-            !usuarioActualizado.getMatricula().equals(usuarioActualizado.getMatricula())) {
+            !usuarioActualizado.getMatricula().equals(id)) {
             throw new IllegalArgumentException("La matrícula no se puede modificar.");
         }
         // Actualiza los campos
@@ -48,7 +47,17 @@ public class ServicioUsuario {
         return repositorio.save(usuarioBase);
     }
 
-    public void eliminarUsuario(Long id) {
+    public void eliminarUsuario(String id, ServicioPrestamo servicioPrestamo) {
+        // Comprueba si el usuario existe
+        Usuario usuario = obtenerUsuarioPorId(id)
+            .orElseThrow(() -> new NullPointerException(
+                "No se ha encontrado el usuario"));
+        // Comprueba si el usuario ha hecho algun prestamo
+        if(servicioPrestamo.buscarPrestamosPorUsuario(usuario, true).size() > 0){
+            throw new IllegalArgumentException(
+                "No se puede borrar un usuario con prestamos activos");
+        }
+        // Elimina el usuario
         repositorio.deleteById(id);
     }
 

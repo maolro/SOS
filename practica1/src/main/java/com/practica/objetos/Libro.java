@@ -2,8 +2,6 @@ package com.practica.objetos;
 
 import org.springframework.hateoas.RepresentationModel;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
@@ -12,39 +10,32 @@ import jakarta.validation.constraints.*;
 public class Libro extends RepresentationModel<Libro> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @NotBlank(message = "El ISBN es obligatorio.")
+    private String isbn;
 
-    @NotNull(message = "El título es obligatorio.")
+    @NotBlank(message = "El título es obligatorio.")
     private String titulo;
 
-    @NotNull(message = "El autor es obligatorio.")
     private String autor;
 
     private String edicion;
 
-    @NotNull(message = "El ISBN es obligatorio.")
-    private String isbn;
-
     private String editorial;
 
-    private boolean disponible = true;
+    @NotNull(message = "La cantidad de ejemplares disponibles es obligatoria.")
+    private Integer disponibles;
 
     public Libro() {}
 
     public Libro(String titulo, String autor, String edicion, 
-    String isbn, String editorial, boolean disponible) {
+    String isbn, String editorial, Integer disponibles) {
         this.titulo = titulo;
         this.autor = autor;
         this.edicion = edicion;
         this.isbn = isbn;
         this.editorial = editorial;
-        this.disponible = disponible;
+        this.disponibles = disponibles;
     }
-
-    public Long getId() { return id; }
-
-    public void setId(Long id) { this.id = id; }
 
     public String getTitulo() { return titulo; }
 
@@ -66,7 +57,7 @@ public class Libro extends RepresentationModel<Libro> {
 
     public void setEditorial(String editorial) { this.editorial = editorial; }
 
-    public boolean isDisponible() { return disponible; }
+    public Integer getDisponibles() { return disponibles; }
 
-    public void setDisponible(boolean disponible) { this.disponible = disponible; }
+    public void setDisponibles(Integer disponibles) { this.disponibles = disponibles; }
 }

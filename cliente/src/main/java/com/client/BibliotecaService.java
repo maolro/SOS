@@ -32,7 +32,7 @@ import com.client.wrappers.UsuarioPagedResponse;
 
 public class BibliotecaService {
 
-    private static final String BASE_URL = "http://localhost:8080/api/v1/"; 
+    private static final String BASE_URL = "http://localhost:8080/api/v1"; 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter
     .ofPattern("yyyy-MM-dd");
 
@@ -41,7 +41,7 @@ public class BibliotecaService {
 
     public BibliotecaService() {
         webClient = WebClient.builder().baseUrl(BASE_URL).build();
-        restTemplate = 
+        restTemplate = new RestTemplate();
     }
 
     // Función para imprimir la respuesta con mensajes en español
@@ -53,25 +53,50 @@ public class BibliotecaService {
     }
 
     // Crear usuario (POST /usuarios)
-    public Usuario crearUsuario(String nombreUsuario, String matricula, String fechaNacimiento, String correoElectronico) {
-        String url = BASE_URL + "usuarios";
+    public UsuarioResp crearUsuario(String nombreUsuario, String matricula, String fechaNacimiento, String correoElectronico) {
+        // Crear un objeto usuario
         Usuario usuario = new Usuario(nombreUsuario, matricula, fechaNacimiento, correoElectronico);
 
         try {
-            ResponseEntity<Usuario> resp = restTemplate.postForEntity(url, usuario, Usuario.class);
-            imprimirRespuesta(resp.getStatusCode(), "Usuario creado exitosamente: " + resp.getBody().toString());
-            return resp.getBody();
+            String referencia = webClient.post() //operación POST
+                .uri("/usuarios") //URI
+                .contentType(MediaType.APPLICATION_JSON) //Añadimos la cabecera content_type
+                .body(Mono.just(usuario), Usuario.class) // Crea un objeto Mono con el contenido del usuario. 
+                .retrieve() // realiza la solicitud
+                .onStatus(HttpStatusCode::isError, response -> {
+                    // Extrae status y body de manera asincrona
+                    return response.bodyToMono(String.class).doOnNext(body -> {
+                        imprimirRespuesta(response.statusCode(), body);
+                    }).then(Mono.empty());
+                })
+                .toBodilessEntity() // Obtiene solo la respuesta HTTP sin cuerpo
+                .map(response -> {// Obtiene la cabecera location de la respuesta
+                    if (response.getHeaders().getLocation() != null) {
+                        return response.getHeaders().getLocation().toString();
+                    } 
+                    else {
+                        throw new RuntimeException("No se recibió una URL en la cabecera Location");
+                    }
+                })
+                .block();// Bloquea para obtener el resultado sincrónicamente
+            // Obtiene el usuario a partir de su referencia
+            if (referencia != null) {
+                String[] arr = referencia.split("/");
+                Long id = Long.parseLong(arr[arr.length - 1]);
+                return obtenerUsuario(id);
+            }
+            return null;
         } 
-        catch (HttpClientErrorException e) {
-            imprimirRespuesta(e.getStatusCode(), "Error al crear usuario: " + e.getResponseBodyAsString());
+        catch (RuntimeException e) {
+            System.err.println("Error: " + e.getMessage());
             return null;
         }
     }
 
     // Obtener usuario por ID (GET /usuarios/{id})
-    public Usuario obtenerUsuario(Long id) {
-        Usuario usuario = webClient.get() //operación a realizar
-            .uri("/usuarios/", id) // URI
+    public UsuarioResp obtenerUsuario(Long id) {
+        UsuarioResp usuario = webClient.get() //operación a realizar
+            .uri("/usuarios/{id}", id) // URI
             .retrieve() // realiza la solicitud
             .onStatus(HttpStatusCode::is4xxClientError, response 
                 -> response.bodyToMono(String.class)
@@ -83,16 +108,17 @@ public class BibliotecaService {
                 .doOnNext(body -> System.err.println("Error 5XX: " + body))
                 .then(Mono.empty())
             )
-            .bodyToMono(Usuario.class) //Convierte la respuesta en un Usuario
+            .bodyToMono(UsuarioResp.class) //Convierte la respuesta en un Usuario
             .block(); // Usamos block() para obtener la respuesta de forma síncrona
         
+        System.out.println(usuario.toString());
         return usuario;
     }
 
     // Actualizar usuario (PUT /usuarios/{id})
-    public Usuario actualizarUsuario(Long id, String nombreUsuario, String matricula, String fechaNacimiento, String correoElectronico) {
+    public UsuarioResp actualizarUsuario(Long id, String nombreUsuario, String matricula, String fechaNacimiento, String correoElectronico) {
         String url = BASE_URL + "usuarios/" + id;
-        Usuario usuario = new Usuario(nombreUsuario, matricula, fechaNacimiento, correoElectronico);
+        UsuarioResp usuario = new UsuarioResp(nombreUsuario, matricula, fechaNacimiento, correoElectronico);
         usuario.setId(id);
 
         try {
@@ -234,7 +260,7 @@ public class BibliotecaService {
     }
 
     // Listar todos los usuarios con paginación
-    public List<Usuario> listarUsuarios(String startsWith, int page, int size) {
+    public List<UsuarioResp> listarUsuarios(String startsWith, int page, int size) {
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL + "usuarios")
             .queryParam("starts_with", startsWith)
             .queryParam("page", page)
@@ -417,8 +443,8 @@ public class BibliotecaService {
     }
 
     // Devolver préstamo
-    public Prestamo devolverPrestamo(Long prestamoId) {
-        String url = BASE_URL + "prestamos/" + prestamoId + "/devolucion";
+    public Prestamo devolverPrestamo(Long usuarioId, Long prestamoId) {
+        String url = BASE_URL + "usuarios/" + usuarioId + "/prestamos/" + prestamoId;
         try {
             ResponseEntity<Prestamo> resp = restTemplate.postForEntity(url, null, Prestamo.class);
             imprimirRespuesta(resp.getStatusCode(), "Préstamo devuelto exitosamente: " + resp.getBody().toString());
@@ -427,40 +453,6 @@ public class BibliotecaService {
         catch (HttpClientErrorException e) {
             imprimirRespuesta(e.getStatusCode(), "Error al devolver préstamo: " + e.getResponseBodyAsString());
             return null;
-        }
-    }
-
-    // Probar devolución tardía
-    public void probarDevolucionTardia(Long usuarioId, Long libroId) {
-        // Crear un préstamo con fecha antigua (simulando retraso)
-        String fechaAntigua = LocalDate.now().minusWeeks(3).format(DATE_FORMATTER);
-        String url = BASE_URL + "prestamos";
-        CrearPrestamoDTO prestamoDTO = new CrearPrestamoDTO(usuarioId, libroId, fechaAntigua);
-
-        try {
-            // Crear préstamo atrasado (esto requeriría que el backend permita fechas pasadas para pruebas)
-            ResponseEntity<Prestamo> respCrear = restTemplate.postForEntity(url, prestamoDTO, Prestamo.class);
-            Prestamo prestamo = respCrear.getBody();
-            
-            if (prestamo != null) {
-                // Intentar devolver
-                Prestamo prestamoDevuelto = devolverPrestamo(prestamo.getId());
-                
-                if (prestamoDevuelto != null && prestamoDevuelto.getSancion() != null) {
-                    imprimirRespuesta(HttpStatus.OK, "SANCION APLICADA CORRECTAMENTE: " + prestamoDevuelto.getSancion());
-                    
-                    // Intentar crear nuevo préstamo (debería fallar por sanción)
-                    try {
-                        crearPrestamo(usuarioId, libroId);
-                        imprimirRespuesta(HttpStatus.BAD_REQUEST, "ERROR: Se permitió préstamo durante sanción");
-                    } catch (Exception e) {
-                        imprimirRespuesta(HttpStatus.FORBIDDEN, "CORRECTO: No se permitió préstamo durante sanción");
-                    }
-                }
-            }
-        } 
-        catch (HttpClientErrorException e) {
-            imprimirRespuesta(e.getStatusCode(), "Error en prueba de devolución tardía: " + e.getResponseBodyAsString());
         }
     }
 }

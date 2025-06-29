@@ -3,9 +3,7 @@ package com.practica.repositorios;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.practica.objetos.Prestamo;
-import com.practica.objetos.UsuarioPrestamo;
-import com.practica.objetos.Usuario;
+import com.practica.objetos.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,21 +13,38 @@ import org.springframework.data.repository.query.Param;
 
 public interface RepositorioPrestamo extends JpaRepository<Prestamo, Long> {
 
-    List<Prestamo> findByUsuarioIdAndFechaDevolucionRealIsNull(Long usuarioId);
-
-    List<Prestamo> findByUsuario(Usuario usuario);
-
-    List<Prestamo> findTop5ByUsuarioOrderByFechaPrestamoDesc(Usuario usuario);
+    @Query("SELECT p FROM Prestamo p " +
+       "WHERE p.usuario = :usuario " +
+       "AND (:actual = false OR p.fechaDevolucionReal IS NULL)")
+    List<Prestamo> findByUsuario(
+            @Param("usuario") Usuario usuario,
+            @Param("actual") boolean actual
+    );
 
     @Query("SELECT p FROM Prestamo p " +
-           "WHERE (p.usuario.id = :usuarioId) " +
+        "WHERE p.libro = :libro " +
+        "AND (:actual = false OR p.fechaDevolucionReal IS NULL)")
+    List<Prestamo> findByLibro(
+            @Param("libro") Libro libro,
+            @Param("actual") boolean actual
+    );
+
+    @Query("SELECT p FROM Prestamo p " +
+           "WHERE (p.usuario.matricula = :usuarioId) " +
            "AND (:fechaInicio IS NULL OR p.fechaPrestamo >= :fechaInicio) " +
            "AND (:fechaFin IS NULL OR p.fechaPrestamo <= :fechaFin)" +
-           "AND p.fechaDevolucionReal IS NULL")
-    Page<Prestamo> prestamosActualesPorFecha(
+           "AND (:actual = false OR p.fechaDevolucionReal IS NULL)" +
+           "ORDER BY p.fechaPrestamo DESC")
+    Page<Prestamo> listaPrestamos(
             @Param("usuarioId") Long usuarioId,
             @Param("fechaInicio") LocalDate fechaInicio,
             @Param("fechaFin") LocalDate fechaFin,
+            @Param("actual") Boolean actual,
             Pageable pageable
     );
+
+    @Query("SELECT DISTINCT p.libro FROM Prestamo p "+
+    "WHERE (p.usuario = :usuario)")
+    Page<Libro> buscarLibrosPrestados(@Param("usuario") Usuario usuario,
+    Pageable pageable);
 }

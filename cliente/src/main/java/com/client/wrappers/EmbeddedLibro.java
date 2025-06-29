@@ -2,7 +2,7 @@ package com.client.wrappers;
 
 import java.util.List;
 
-import com.client.Libro;
+import com.client.model.Libro;
 
 public class EmbeddedLibro {
     private List<Libro> libroList;

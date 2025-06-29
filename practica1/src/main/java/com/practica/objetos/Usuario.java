@@ -13,15 +13,13 @@ import jakarta.validation.constraints.*;
 @Table(name = "usuarios")
 public class Usuario extends RepresentationModel<Usuario>{
 
+        
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @NotNull(message = "La matrícula es obligatoria.")
+    private String matricula;
 
     @NotNull(message = "El nombre de usuario es obligatorio.")
     private String nombreUsuario;
-
-    @NotNull(message = "La matrícula es obligatoria.")
-    private String matricula;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Temporal(TemporalType.DATE)
@@ -30,20 +28,16 @@ public class Usuario extends RepresentationModel<Usuario>{
     @Email(message="Correo electrónico no válido")
     private String correoElectronico;
 
+    private Boolean sancionado = false;
+
     public Usuario() {}
 
     public Usuario(String nombreUsuario, String matricula, 
         Date fechaNacimiento, String correoElectronico) {
-            this.nombreUsuario = nombreUsuario;
             this.matricula = matricula;
+            this.nombreUsuario = nombreUsuario;
             this.fechaNacimiento = fechaNacimiento;
             this.correoElectronico = correoElectronico;
-    }
-
-    public Long getId() { return id; }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getNombreUsuario() { return nombreUsuario; }
@@ -66,4 +60,9 @@ public class Usuario extends RepresentationModel<Usuario>{
         this.correoElectronico = correoElectronico;
     }
 
+    public Boolean getSancionado() { return sancionado;}
+
+    public void setSancionado(Boolean sancionado) {
+        this.sancionado = sancionado;
+    }
 }

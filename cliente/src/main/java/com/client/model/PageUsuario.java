@@ -3,23 +3,23 @@ package com.client.model;
 import org.springframework.hateoas.PagedModel.PageMetadata;
 
 public class PageUsuario {
-    private Usuario _embedded;
+    private UsuarioResp _embedded;
     private PageLinks _links;
     private PageMetadata page;
 
     public PageUsuario() {}
 
-    public PageUsuario(Usuario _embedded, PageLinks _links, PageMetadata page) {
+    public PageUsuario(UsuarioResp _embedded, PageLinks _links, PageMetadata page) {
         this._embedded = _embedded;
         this._links = _links;
         this.page = page;
     }
 
-    public Usuario get_embedded() {
+    public UsuarioResp get_embedded() {
         return _embedded;
     }
 
-    public void set_embedded(Usuario _embedded) {
+    public void set_embedded(UsuarioResp _embedded) {
         this._embedded = _embedded;
     }
 

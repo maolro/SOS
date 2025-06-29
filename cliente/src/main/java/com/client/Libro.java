@@ -8,18 +8,18 @@ public class Libro {
     private String edicion;
     private String isbn;
     private String editorial;
-    private boolean disponible;
+    private int disponibles;
 
     public Libro() {}
 
     public Libro(String titulo, String autor, String edicion, 
-    String isbn, String editorial, boolean disponible) {
+    String isbn, String editorial, int disponibles) {
         this.titulo = titulo;
         this.autor = autor;
         this.edicion = edicion;
         this.isbn = isbn;
         this.editorial = editorial;
-        this.disponible = disponible;
+        this.disponibles = disponibles;
     }
 
     public Long getId() { return id; }
@@ -46,9 +46,9 @@ public class Libro {
 
     public void setEditorial(String editorial) { this.editorial = editorial; }
 
-    public boolean isDisponible() { return disponible; }
+    public int getDisponibles() { return disponibles; }
 
-    public void setDisponible(boolean disponible) { this.disponible = disponible; }
+    public void setDisponibles(int disponibles) { this.disponibles = disponibles; }
 
     @Override
     public String toString() {
@@ -59,7 +59,7 @@ public class Libro {
                 ", edicion='" + edicion + '\'' +
                 ", isbn='" + isbn + '\'' +
                 ", editorial='" + editorial + '\'' +
-                ", disponible='" + disponible + '\'' +
+                ", disponibles='" + disponibles + '\'' +
                 '}';
     }
 }

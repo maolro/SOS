@@ -1,0 +1,64 @@
+{
+  "titulo": "Cien años de soledad",
+  "autor": "Gabriel García Márquez",
+  "edicion": "1ª edición",
+  "isbn": "978-3-16-148410-0",
+  "editorial": "Editorial Sudamericana",
+  "disponible": true
+}
+{
+  "titulo": "Don Quijote de la Mancha",
+  "autor": "Miguel de Cervantes",
+  "edicion": null,
+  "isbn": "978-84-376-0494-7",
+  "editorial": "Alianza Editorial",
+  "disponible": false
+}
+{
+  "titulo": "1984",
+  "autor": "George Orwell",
+  "edicion": "3rd",
+  "isbn": "978-0-452-28423-4",
+  "editorial": null,
+  "disponible": true
+}
+{
+  "id": 4,
+  "titulo": "El Principito",
+  "autor": "Antoine de Saint-Exupéry",
+  "edicion": "10ª edición",
+  "isbn": "12345-abc-xyz",
+  "editorial": "Salamandra",
+  "disponible": true
+}
+
+{
+  "nombreUsuario": "juanperez",
+  "matricula": "2023123456",
+  "fechaNacimiento": "1995-04-15",
+  "correoElectronico": "juan.perez@example.com"
+}
+{
+  "nombreUsuario": "maria.sanchez",
+  "matricula": "2023567890",
+  "fechaNacimiento": "2001-09-30",
+  "correoElectronico": "maria.sanchez@example.com"
+}
+{
+  "nombreUsuario": "invalid.email",
+  "matricula": "2023789123",
+  "fechaNacimiento": "2000-01-01",
+  "correoElectronico": "not-an-email"
+}
+{
+  "nombreUsuario": "littleuser",
+  "matricula": "2023901122",
+  "fechaNacimiento": "2020-06-01",
+  "correoElectronico": "baby@school.edu"
+}
+
+{
+  "usuario_id": 1,
+  "libro_id": 1,
+  "fechaPrestamo": "2025-06-27"
+}

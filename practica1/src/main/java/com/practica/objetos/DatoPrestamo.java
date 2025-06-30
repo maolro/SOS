@@ -2,9 +2,6 @@ package com.practica.objetos;
 
 import java.util.Date;
 
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class DatoPrestamo {
@@ -12,14 +9,10 @@ public class DatoPrestamo {
     private String libro_id;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    @Temporal(TemporalType.DATE)
     private Date fechaPrestamo;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    @Temporal(TemporalType.DATE)
     private Date fechaDevolucion;
-
-    private Boolean ampliado = false;
 
     public DatoPrestamo() {}
 
@@ -48,15 +41,7 @@ public class DatoPrestamo {
         return fechaDevolucion;
     }
 
-    public void getFechaDevolucion(Date fechaDevolucion) {
+    public void setFechaDevolucion(Date fechaDevolucion) {
         this.fechaDevolucion = fechaDevolucion;
-    }   
-
-    public Boolean getAmpliado(){
-        return ampliado;
-    }
-
-    public void setAmpliado(Boolean ampliado){
-        this.ampliado = ampliado;
     }
 }

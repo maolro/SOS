@@ -4,17 +4,24 @@ import java.util.Date;
 
 import org.springframework.hateoas.RepresentationModel;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "prestamos")
 public class Prestamo extends RepresentationModel<Prestamo>{
 
-    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "usuario_id")
     private Usuario usuario;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "libro_id")
     private Libro libro;
+    
     private Date fechaPrestamo;
     private Date fechaDevolucionPrevista;
     private Date fechaDevolucionReal;

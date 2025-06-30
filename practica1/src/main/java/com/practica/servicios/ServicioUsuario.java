@@ -67,7 +67,8 @@ public class ServicioUsuario {
         Pageable paginable = PageRequest.of(page, size);
         if (starts_with != null) {
             return repositorio.findByNombreUsuarioStartsWith(starts_with, paginable);
-        } else {
+        } 
+        else {
             return repositorio.findAll(paginable);
         }
     }

@@ -36,7 +36,13 @@ public class ServicioPrestamo {
         return repositorio.findById(prestamoId);
     }
 
-    public Prestamo crearPrestamo(DatoPrestamo upId, Usuario usuario, Libro libro) {
+    public Prestamo crearPrestamo(DatoPrestamo upId, String usuarioId) {
+        // Obtiene el usuario
+        Usuario usuario = servicioUsuario.obtenerUsuarioPorId(usuarioId)
+            .orElseThrow(() -> new NoSuchElementException("El usuario no existe"));
+        // Obtiene el libro
+        Libro libro = servicioLibro.obtenerLibroPorId(upId.getLibro_id())
+            .orElseThrow(() -> new NoSuchElementException("El libro no existe"));
         // Comprueba si el usuario esta sancionado
         if(usuario.getSancionado()){
             throw new IllegalCallerException("El usuario está sancionado");
@@ -49,19 +55,19 @@ public class ServicioPrestamo {
         if(buscarPrestamosPorLibro(libro, true).size() > 0){
             throw new NullPointerException("El usuario ya tiene prestado el libro");
         }
-        // Comprueba si hay valores invalidos
-        if(upId.getFechaDevolucion() != null || upId.getAmpliado()){
-            throw new IllegalArgumentException("Valores invalidos");
-        }
-
-        // Actualiza la cantidad de libros disponibles
-        libro.setDisponibles(libro.getDisponibles() - 1);
 
         // Se asignan las claves y valores del préstamo
         Prestamo prestamo = new Prestamo();
         prestamo.setUsuario(usuario);
         prestamo.setLibro(libro);
-        prestamo.setFechaPrestamo(upId.getFechaPrestamo());
+
+        // Fija la fecha del prestamo (hoy en caso que falte)
+        if(upId.getFechaPrestamo() == null){
+            prestamo.setFechaPrestamo(new Date());
+        }
+        else{
+            prestamo.setFechaPrestamo(upId.getFechaPrestamo());
+        }
         
         // Calcula la fecha de devolución prevista
         Calendar cal = Calendar.getInstance();
@@ -69,6 +75,20 @@ public class ServicioPrestamo {
         cal.add(Calendar.DAY_OF_MONTH, 14);
         prestamo.setFechaDevolucionPrevista(cal.getTime());
 
+        // Comprueba si las fechas son validas
+        if(upId.getFechaDevolucion() != null 
+        && (upId.getFechaDevolucion().before(prestamo.getFechaPrestamo())
+        || (upId.getFechaPrestamo() == null))){
+            throw new IllegalArgumentException(
+                "La fecha de devolución real no puede ser anterior a la fecha del préstamo o en el futuro");
+        }
+
+        prestamo.setFechaDevolucionReal(upId.getFechaDevolucion());
+        // Se actualizan los prestamos si no es historico
+        if(upId.getFechaDevolucion() == null){
+            // Actualiza la cantidad de libros disponibles
+            libro.setDisponibles(libro.getDisponibles() - 1);
+        }
         // Se guarda el préstamo en el repositorio
         return repositorio.save(prestamo);
     }
@@ -127,15 +147,19 @@ public class ServicioPrestamo {
         return repositorio.buscarLibrosPrestados(usuario, pageable);
     }
 
-    public Prestamo ampliarPrestamo(Long id){
+    public Prestamo ampliarPrestamo(Long id, String usuarioId){
         Prestamo prestamo = obtenerPrestamoPorId(id)
             .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
+        // Comprueba si el path es corrrecto
+        if(!prestamo.getUsuario().getMatricula().equals(usuarioId)){
+            throw new NoSuchElementException("El usuario indicado no tiene el prestamo");
+        }
         // Comprueba si se ha devuelto
         if(prestamo.getFechaDevolucionReal() != null){
             throw new IllegalArgumentException("No se puede ampliar un prestamo devuelto");
         }
         // Comprueba si el prestamo esta vencido
-        if(prestamo.getFechaDevolucionPrevista().after(new Date())){
+        if(prestamo.getFechaDevolucionPrevista().before(new Date())){
             throw new IllegalArgumentException("No se puede ampliar un prestamo vencido");
         }
         // Comprueba si se ha ampliado ya

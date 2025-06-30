@@ -7,6 +7,7 @@ com\practica\repositorios\RepositorioUsuario.class
 com\practica\controladores\ControladorLibro.class
 com\practica\objetos\DatoPrestamo.class
 com\practica\objetos\Prestamo.class
+com\practica\objetos\PrestamoAccionDTO.class
 com\practica\servicios\ServicioUsuario.class
 com\practica\PracticaApp.class
 com\practica\objetos\Libro.class

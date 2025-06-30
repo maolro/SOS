@@ -140,7 +140,7 @@ public class ControladorUsuario {
     public ResponseEntity<?> historicoLibrosUsuario(
         @PathVariable String id,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size){
+        @RequestParam(defaultValue = "2") int size){
         
         Usuario usuario = servicioUsuario.obtenerUsuarioPorId(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
@@ -151,10 +151,7 @@ public class ControladorUsuario {
     }
 
     @GetMapping("/{id}/actividad")
-    public ResponseEntity<?> actividadUsuario(@PathVariable String id,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size){
-
+    public ResponseEntity<?> actividadUsuario(@PathVariable String id){
         Usuario usuario = servicioUsuario.obtenerUsuarioPorId(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
         
@@ -170,7 +167,9 @@ public class ControladorUsuario {
         }
         // Obtiene histórico de 5 préstamos
         List<Prestamo> listaPrestamosHistoricos = servicioPrestamo.buscarPrestamosPorUsuario(usuario, false);
-        for (int i=0; i < 5; i++) {
+        for (int i=0; 
+        i < Math.min(listaPrestamosHistoricos.size(), 5); i++) {
+            // Obtiene y añade el préstamo actual
             Prestamo prestamo = listaPrestamosHistoricos.get(i);
             historicoPrestamos.add(EntityModel.of(
                 prestamo,      
@@ -203,22 +202,18 @@ public class ControladorUsuario {
             );
             return ResponseEntity.badRequest().body(errores);
         }
-        // Comprueba si las claves foráneas existen
-        Usuario usuario = servicioUsuario.obtenerUsuarioPorId(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-            "No se ha encontrado el usuario"));
-        Libro libro = servicioLibro.obtenerLibroPorId(usuarioPrestamo.getLibro_id())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-            "El libro indicado no existe"));
-        
         // Se crea y se guarda un objeto préstmao
         try{
-            Prestamo prestamo = servicioPrestamo.crearPrestamo(usuarioPrestamo, usuario, libro);
+            Prestamo prestamo = servicioPrestamo.crearPrestamo(usuarioPrestamo, id);
             // Envío de resultado exitoso
             return ResponseEntity.created(linkTo(methodOn(ControladorUsuario.class)
             .obtenerPrestamoPorId(id, prestamo.getId())).toUri())
             .build();
         }
+        catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } 
         catch (NullPointerException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", e.getMessage()));
@@ -240,7 +235,7 @@ public class ControladorUsuario {
             @PathVariable Long id,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
-            @RequestParam(required = false) Boolean actual,
+            @RequestParam(defaultValue = "true") Boolean actual,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -287,45 +282,34 @@ public class ControladorUsuario {
         return ResponseEntity.noContent().build();
     }
 
-    // AMPLIACIÓN O DEVOLUCIÓN DE UN PRÉSTAMO
+    // AMPLIACIÓN DE UN PRÉSTAMO
     @PutMapping("/{usuarioId}/prestamos/{prestamoId}")
-    public ResponseEntity<?> actualizarPrestamo(@PathVariable String usuarioId, @PathVariable Long prestamoId, @Valid @RequestBody DatoPrestamo prestamoNuevo) {
-        Prestamo prestamo = servicioPrestamo.obtenerPrestamoPorId(prestamoId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-            "No se ha encontrado el préstamo"));
+    public ResponseEntity<?> manejarAccionPrestamo(
+            @PathVariable String usuarioId,
+            @PathVariable Long prestamoId,
+            @RequestBody PrestamoAccionDTO accion) {
 
-        // Comprueba si el usuario es válido
-        if (!prestamo.getUsuario().getMatricula().equals(usuarioId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("El préstamo no pertenece al usuario.");
-        }
-        // Determina si se trata de una ampliacion
-        if(prestamoNuevo.getAmpliado() != null){
-            try{
-                prestamo = servicioPrestamo.ampliarPrestamo(prestamoId);
+        try {
+            if(accion.getOperacion().equals("ampliar")) {
+                Prestamo prestamo = servicioPrestamo.ampliarPrestamo(prestamoId, usuarioId);
                 return ResponseEntity.ok(prestamo);
             }
-            catch(IllegalArgumentException e){
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", e.getMessage()));
-            }
-        }
-        // Determina si se trata de una devolucion
-        else if(prestamoNuevo.getFechaDevolucion() != null){
-            try{
-                String mensaje = servicioPrestamo.devolverPrestamo(prestamoId, prestamoNuevo.getFechaDevolucion());
+            else if(accion.getOperacion().equals("devolver")){
+                if (accion.getFechaDevolucion() == null) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Datos de devolución faltantes"));
+                }
+                String mensaje = servicioPrestamo.devolverPrestamo(prestamoId, accion.getFechaDevolucion());
                 return ResponseEntity.ok(Map.of("resultado", mensaje));
             }
-            catch(IllegalArgumentException e){
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", e.getMessage()));
-            }
+            else{
+                return ResponseEntity.badRequest().body(Map.of("error", "Tipo de acción desconocido"));
+            }             
+        } 
+        catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } 
+        catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
         }
-        else{
-            // Devuelve error en otro caso
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "peticion invalida"));
-        }
-        
     }
 }

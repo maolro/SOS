@@ -236,7 +236,7 @@ public class ControladorUsuario {
 
     // OBTENCIÓN DE PRÉSTAMOS ACTUALES CON FILTRO DE FECHAS
     @GetMapping(value = "/{id}/prestamos", produces = { "application/json", "application/xml" })
-    public ResponseEntity<PagedModel<Prestamo>> obtenerPrestamos(
+    public ResponseEntity<?> obtenerPrestamos(
             @PathVariable String id,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
@@ -246,9 +246,15 @@ public class ControladorUsuario {
 
         servicioUsuario.obtenerUsuarioPorId(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
+        try{
+            Page<Prestamo> prestamos = servicioPrestamo.buscarPrestamos(page, size, id, fechaInicio, fechaFin, actual);
+            return ResponseEntity.ok(pagedResourcesAssemblerPrestamo.toModel(prestamos, ensambladorPrestamo));
+        }
+        catch(IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        }
         
-        Page<Prestamo> prestamos = servicioPrestamo.buscarPrestamos(page, size, id, fechaInicio, fechaFin, actual);
-        return ResponseEntity.ok(pagedResourcesAssemblerPrestamo.toModel(prestamos, ensambladorPrestamo));
     }
 
     // OBTENCIÓN DE UN PRÉSTAMO ESPECÍFICO

@@ -1,6 +1,8 @@
 package com.practica.servicios;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,13 +120,12 @@ public class ServicioPrestamo {
         java.sql.Date fechaFin;
 
         try {
-            fechaInicio = (fechaInicioStr != null)
-                    ? java.sql.Date.valueOf(LocalDate.parse(fechaInicioStr))
-                    : java.sql.Date.valueOf(LocalDate.of(1900, 1, 1)); // very old date
+            LocalDate parsedInicio = (fechaInicioStr != null) ? LocalDate.parse(fechaInicioStr)
+                    : LocalDate.of(1900, 1, 1);
+            LocalDate parsedFin = (fechaFinStr != null) ? LocalDate.parse(fechaFinStr) : LocalDate.of(2100, 1, 1);
 
-            fechaFin = (fechaFinStr != null)
-                    ? java.sql.Date.valueOf(LocalDate.parse(fechaFinStr))
-                    : java.sql.Date.valueOf(LocalDate.of(2100, 1, 1)); // far future
+            fechaInicio = java.sql.Date.valueOf(parsedInicio);
+            fechaFin = java.sql.Date.valueOf(parsedFin);
         } catch (Exception e) {
             throw new IllegalArgumentException("Formato de fecha inválido. Usa yyyy-MM-dd.");
         }

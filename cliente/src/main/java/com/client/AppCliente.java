@@ -232,7 +232,7 @@ public class AppCliente {
 
         // Prueba 11: GET préstamos actuales filtrados por periodo
         System.out.println("\n> Prueba 11: Obtener préstamos actuales por periodo (esperado: éxito)");
-        client.getPrestamoList("PREST01", null, "2025-06-01", "2025-06-30", null, null);
+        client.getPrestamoList("PREST01", null, "2025-06-01", "2025-06-20", null, null);
 
         // Prueba 12: GET préstamos actuales de usuario inexistente
         System.out.println("\n> Prueba 12: Obtener préstamos de usuario inexistente (esperado: error 404)");
@@ -241,7 +241,7 @@ public class AppCliente {
 
         // Prueba 13: GET préstamos actuales con fechas inválidas
         System.out.println("\n> Prueba 13: Obtener préstamos con fechas inválidas (esperado: error)");
-        client.getPrestamoList("PREST01", null, "20250601", "2025-06-30", null, null);
+        client.getPrestamoList("PREST01", null, "ABCDEFG", "ABCDEFG", null, null);
 
         // Prueba 14: GET préstamos históricos
         System.out.println("\n> Prueba 14: Obtener préstamos históricos (esperado: éxito)");
@@ -249,7 +249,7 @@ public class AppCliente {
 
         // Prueba 15: GET préstamos históricos filtrados
         System.out.println("\n> Prueba 15: Obtener préstamos históricos por periodo (esperado: éxito)");
-        client.getPrestamoList("PREST01", false, "2025-06-01", "2025-06-30", null, null);
+        client.getPrestamoList("PREST01", false, "2025-06-01", "2025-06-20", null, null);
 
         // Prueba 16: Ampliar préstamo
         System.out.println("\n> Prueba 16: Ampliar préstamo (esperado: éxito)");

@@ -357,10 +357,10 @@ public class ClienteBiblioteca {
                         builder.queryParam("actual", actual);
                     }
                     if (fromDate != null && !fromDate.isEmpty()) {
-                        builder.queryParam("from", fromDate);
+                        builder.queryParam("fechaInicio", fromDate);
                     }
                     if (toDate != null && !toDate.isEmpty()) {
-                        builder.queryParam("to", toDate);
+                        builder.queryParam("fechaFin", toDate);
                     }
                     if (page != null) {
                         builder.queryParam("page", page);

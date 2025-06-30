@@ -244,6 +244,9 @@ public class ControladorUsuario {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        servicioUsuario.obtenerUsuarioPorId(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se ha encontrado el usuario"));
+        
         Page<Prestamo> prestamos = servicioPrestamo.buscarPrestamos(page, size, id, fechaInicio, fechaFin, actual);
         return ResponseEntity.ok(pagedResourcesAssemblerPrestamo.toModel(prestamos, ensambladorPrestamo));
     }

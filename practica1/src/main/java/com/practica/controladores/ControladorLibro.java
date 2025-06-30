@@ -5,6 +5,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.practica.assembler.EnsambladorLibro;
 import com.practica.objetos.Libro;
+import com.practica.objetos.Usuario;
 import com.practica.servicios.*;
 
 import jakarta.validation.Valid;

@@ -17,7 +17,7 @@ public interface RepositorioLibro extends JpaRepository<Libro, String> {
        "AND (:disponible = false OR l.disponibles > 0)")
     Page<Libro> buscarLibros(
             @Param("titulo") String titulo,
-            @Param("disponible") boolean disponible,
+            @Param("disponible") Boolean disponible,
             Pageable pageable
     );
 }

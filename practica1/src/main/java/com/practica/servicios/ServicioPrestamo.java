@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import com.practica.objetos.*;
 import com.practica.repositorios.*;
 
-
 @Service
 public class ServicioPrestamo {
 
@@ -22,7 +21,7 @@ public class ServicioPrestamo {
 
     @Autowired
     public ServicioPrestamo(RepositorioPrestamo repositorio,
-    ServicioUsuario servicioUsuario, ServicioLibro servicioLibro) {
+            ServicioUsuario servicioUsuario, ServicioLibro servicioLibro) {
         this.repositorio = repositorio;
         this.servicioUsuario = servicioUsuario;
         this.servicioLibro = servicioLibro;
@@ -39,20 +38,20 @@ public class ServicioPrestamo {
     public Prestamo crearPrestamo(DatoPrestamo upId, String usuarioId) {
         // Obtiene el usuario
         Usuario usuario = servicioUsuario.obtenerUsuarioPorId(usuarioId)
-            .orElseThrow(() -> new NoSuchElementException("El usuario no existe"));
+                .orElseThrow(() -> new NoSuchElementException("El usuario no existe"));
         // Obtiene el libro
         Libro libro = servicioLibro.obtenerLibroPorId(upId.getLibro_id())
-            .orElseThrow(() -> new NoSuchElementException("El libro no existe"));
+                .orElseThrow(() -> new NoSuchElementException("El libro no existe"));
         // Comprueba si el usuario esta sancionado
-        if(usuario.getSancionado()){
+        if (usuario.getSancionado()) {
             throw new IllegalCallerException("El usuario está sancionado");
         }
         // Comprueba si hay copias disponibles del libro
-        if(libro.getDisponibles() <= 0){
+        if (libro.getDisponibles() <= 0) {
             throw new NullPointerException("No quedan ejemplares disponibles");
         }
         // Comprueba si el usuario tiene ya prestado el libro
-        if(buscarPrestamosPorLibro(libro, true).size() > 0){
+        if (buscarPrestamosPorLibro(libro, true).size() > 0) {
             throw new NullPointerException("El usuario ya tiene prestado el libro");
         }
 
@@ -62,13 +61,12 @@ public class ServicioPrestamo {
         prestamo.setLibro(libro);
 
         // Fija la fecha del prestamo (hoy en caso que falte)
-        if(upId.getFechaPrestamo() == null){
+        if (upId.getFechaPrestamo() == null) {
             prestamo.setFechaPrestamo(new Date());
-        }
-        else{
+        } else {
             prestamo.setFechaPrestamo(upId.getFechaPrestamo());
         }
-        
+
         // Calcula la fecha de devolución prevista
         Calendar cal = Calendar.getInstance();
         cal.setTime(prestamo.getFechaPrestamo());
@@ -76,16 +74,16 @@ public class ServicioPrestamo {
         prestamo.setFechaDevolucionPrevista(cal.getTime());
 
         // Comprueba si las fechas son validas
-        if(upId.getFechaDevolucion() != null 
-        && (upId.getFechaDevolucion().before(prestamo.getFechaPrestamo())
-        || (upId.getFechaPrestamo() == null))){
+        if (upId.getFechaDevolucion() != null
+                && (upId.getFechaDevolucion().before(prestamo.getFechaPrestamo())
+                        || (upId.getFechaPrestamo() == null))) {
             throw new IllegalArgumentException(
-                "La fecha de devolución real no puede ser anterior a la fecha del préstamo o en el futuro");
+                    "La fecha de devolución real no puede ser anterior a la fecha del préstamo o en el futuro");
         }
 
         prestamo.setFechaDevolucionReal(upId.getFechaDevolucion());
         // Se actualizan los prestamos si no es historico
-        if(upId.getFechaDevolucion() == null){
+        if (upId.getFechaDevolucion() == null) {
             // Actualiza la cantidad de libros disponibles
             libro.setDisponibles(libro.getDisponibles() - 1);
         }
@@ -95,7 +93,7 @@ public class ServicioPrestamo {
 
     public Prestamo actualizarPrestamo(Long id, Prestamo actualizado) {
         Prestamo base = repositorio.findById(id)
-            .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
 
         base.setFechaPrestamo(actualizado.getFechaPrestamo());
         base.setFechaDevolucionPrevista(actualizado.getFechaDevolucionPrevista());
@@ -111,29 +109,34 @@ public class ServicioPrestamo {
         repositorio.deleteById(id);
     }
 
-    public Page<Prestamo> buscarPrestamos(int page, int size, String usuarioId, 
-    String fechaInicioStr, String fechaFinStr, Boolean actual) {
+    public Page<Prestamo> buscarPrestamos(int page, int size, String usuarioId,
+            String fechaInicioStr, String fechaFinStr, Boolean actual) {
+
         Pageable pageable = PageRequest.of(page, size);
 
-        LocalDate fechaInicio = null;
-        LocalDate fechaFin = null;
+        java.sql.Date fechaInicio;
+        java.sql.Date fechaFin;
 
         try {
-            if (fechaInicioStr != null) {
-                fechaInicio = LocalDate.parse(fechaInicioStr);
-            }
-            if (fechaFinStr != null) {
-                fechaFin = LocalDate.parse(fechaFinStr);
-            }
-        } 
-        catch (Exception e) {
+            fechaInicio = (fechaInicioStr != null)
+                    ? java.sql.Date.valueOf(LocalDate.parse(fechaInicioStr))
+                    : java.sql.Date.valueOf(LocalDate.of(1900, 1, 1)); // very old date
+
+            fechaFin = (fechaFinStr != null)
+                    ? java.sql.Date.valueOf(LocalDate.parse(fechaFinStr))
+                    : java.sql.Date.valueOf(LocalDate.of(2100, 1, 1)); // far future
+        } catch (Exception e) {
             throw new IllegalArgumentException("Formato de fecha inválido. Usa yyyy-MM-dd.");
         }
-        return repositorio.listaPrestamos(usuarioId, fechaInicio, 
-        fechaFin, actual, pageable);
+
+        if (actual == null) {
+            actual = false;
+        }
+
+        return repositorio.listaPrestamos(usuarioId, fechaInicio, fechaFin, actual, pageable);
     }
 
-    public List<Prestamo> buscarPrestamosPorLibro(Libro libro, boolean actual){
+    public List<Prestamo> buscarPrestamosPorLibro(Libro libro, boolean actual) {
         return repositorio.findByLibro(libro, actual);
     }
 
@@ -142,28 +145,28 @@ public class ServicioPrestamo {
     }
 
     public Page<Libro> listaLibrosPrestadosUsuario(int page,
-    int size, Usuario usuario){
+            int size, Usuario usuario) {
         Pageable pageable = PageRequest.of(page, size);
         return repositorio.buscarLibrosPrestados(usuario, pageable);
     }
 
-    public Prestamo ampliarPrestamo(Long id, String usuarioId){
+    public Prestamo ampliarPrestamo(Long id, String usuarioId) {
         Prestamo prestamo = obtenerPrestamoPorId(id)
-            .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
         // Comprueba si el path es corrrecto
-        if(!prestamo.getUsuario().getMatricula().equals(usuarioId)){
+        if (!prestamo.getUsuario().getMatricula().equals(usuarioId)) {
             throw new NoSuchElementException("El usuario indicado no tiene el prestamo");
         }
         // Comprueba si se ha devuelto
-        if(prestamo.getFechaDevolucionReal() != null){
+        if (prestamo.getFechaDevolucionReal() != null) {
             throw new IllegalArgumentException("No se puede ampliar un prestamo devuelto");
         }
         // Comprueba si el prestamo esta vencido
-        if(prestamo.getFechaDevolucionPrevista().before(new Date())){
+        if (prestamo.getFechaDevolucionPrevista().before(new Date())) {
             throw new IllegalArgumentException("No se puede ampliar un prestamo vencido");
         }
         // Comprueba si se ha ampliado ya
-        if(prestamo.getAmpliado()){
+        if (prestamo.getAmpliado()) {
             throw new IllegalArgumentException("No se puede ampliar un prestamo ya ampliado");
         }
         prestamo.setAmpliado(true);
@@ -177,11 +180,11 @@ public class ServicioPrestamo {
         return prestamo;
     }
 
-    public String devolverPrestamo(Long id, Date fechaDevolucion){
+    public String devolverPrestamo(Long id, Date fechaDevolucion) {
         Prestamo prestamo = obtenerPrestamoPorId(id)
-            .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Préstamo no encontrado"));
         // Comprueba si se ha devuelto
-        if(prestamo.getFechaDevolucionReal() != null){
+        if (prestamo.getFechaDevolucionReal() != null) {
             throw new IllegalArgumentException("No se devolver un prestamo devuelto");
         }
         // Guarda el resultado actualizado
@@ -192,11 +195,11 @@ public class ServicioPrestamo {
         libro.setDisponibles(libro.getDisponibles() + 1);
         servicioLibro.actualizarLibro(libro.getISBN(), libro);
         // Comprueba si el prestamo esta vencido y establece sancion
-        if(prestamo.getFechaDevolucionReal().after(new Date())){
+        if (prestamo.getFechaDevolucionReal().after(new Date())) {
             Usuario usuario = prestamo.getUsuario();
             usuario.setSancionado(true);
             servicioUsuario.actualizarUsuario(usuario.getMatricula(),
-             usuario);
+                    usuario);
             return new String("La devolución ha superado el plazo. Se aplicará sanción");
         }
         return new String("La devolución ha sido exitosa");

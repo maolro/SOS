@@ -72,10 +72,13 @@ public class ServicioLibro {
     public Page<Libro> buscarLibros(int page, int size, String titulo, Boolean disponible) {
         Pageable paginable = PageRequest.of(page, size);
         // Comprueba si existe el parametro de busqueda
-        if(disponible == null)
-            return repositorio.buscarLibros(titulo, false, paginable);
-        // Obtiene los elementos del repositorio
-        return repositorio.buscarLibros(titulo, disponible, paginable);
+        if(titulo != null){
+            if(disponible == null)
+                return repositorio.buscarLibros(titulo, false, paginable);
+            return repositorio.buscarLibros(titulo, disponible, paginable);
+        }
+        // Obtiene todos los elementos del repositorio
+        return repositorio.findAll(paginable);
     }
 
 

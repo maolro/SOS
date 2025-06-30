@@ -150,7 +150,7 @@ public class AppCliente {
 
         // Prueba 12: GET de libros con filtro combinado
         System.out.println("\n> Prueba 12: Obtener libros con el titulo Cien que esten disponibles (esperado: éxito)");
-        client.getLibroList("Inglesa", true, null, null);
+        client.getLibroList("Cien", true, null, null);
 
         // Prueba 13: GET de libros con paginación
         System.out.println("\n> Prueba 13: Obtener libros con paginación (esperado: éxito)");
@@ -241,7 +241,7 @@ public class AppCliente {
 
         // Prueba 13: GET préstamos actuales con fechas inválidas
         System.out.println("\n> Prueba 13: Obtener préstamos con fechas inválidas (esperado: error)");
-        client.getPrestamoList("PREST01", null, "2025/06/01", "2025-06-30", null, null);
+        client.getPrestamoList("PREST01", null, "20250601", "2025-06-30", null, null);
 
         // Prueba 14: GET préstamos históricos
         System.out.println("\n> Prueba 14: Obtener préstamos históricos (esperado: éxito)");

@@ -36,7 +36,7 @@ public interface RepositorioPrestamo extends JpaRepository<Prestamo, Long> {
            "AND (:actual = false OR p.fechaDevolucionReal IS NULL)" +
            "ORDER BY p.fechaPrestamo DESC")
     Page<Prestamo> listaPrestamos(
-            @Param("usuarioId") Long usuarioId,
+            @Param("usuarioId") String usuarioId,
             @Param("fechaInicio") LocalDate fechaInicio,
             @Param("fechaFin") LocalDate fechaFin,
             @Param("actual") Boolean actual,

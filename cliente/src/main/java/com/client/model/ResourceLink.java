@@ -5,6 +5,10 @@ public class ResourceLink {
 
     public ResourceLink() {}
 
+    public ResourceLink(Href self) {
+        this.self = self;
+    }
+
     public Href getSelf() {
         return self;
     }

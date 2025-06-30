@@ -39,10 +39,13 @@ public class ServicioUsuario {
             !usuarioActualizado.getMatricula().equals(id)) {
             throw new IllegalArgumentException("La matrícula no se puede modificar.");
         }
-        // Actualiza los campos
-        usuarioBase.setNombreUsuario(usuarioActualizado.getNombreUsuario());
-        usuarioBase.setCorreoElectronico(usuarioActualizado.getCorreoElectronico());
-        usuarioBase.setFechaNacimiento(usuarioActualizado.getFechaNacimiento());
+        // Actualiza los campos no nulos
+        if(usuarioActualizado.getNombreUsuario() != null)
+            usuarioBase.setNombreUsuario(usuarioActualizado.getNombreUsuario());
+        if(usuarioActualizado.getCorreoElectronico() != null)
+            usuarioBase.setCorreoElectronico(usuarioActualizado.getCorreoElectronico());
+        if(usuarioActualizado.getFechaNacimiento() != null)
+            usuarioBase.setFechaNacimiento(usuarioActualizado.getFechaNacimiento());
         // Guarda en el repositorio y devuelve el usuario modificado
         return repositorio.save(usuarioBase);
     }

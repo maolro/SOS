@@ -114,6 +114,8 @@ public class ControladorLibro {
     public ResponseEntity<?> actualizarLibro(@PathVariable String id, @RequestBody Libro libro) {
         try {
             Libro actualizado = libroService.actualizarLibro(id, libro);
+            actualizado.add(linkTo(methodOn(ControladorLibro.class)
+                .obtenerLibroPorId(id)).withSelfRel());
             return ResponseEntity.ok(actualizado);
         } 
         catch (NoSuchElementException e) {

@@ -40,7 +40,6 @@ public class ControladorUsuario {
     private EnsambladorLibro ensambladorLibro;
     private EnsambladorPrestamo ensambladorPrestamo;
     private ServicioUsuario servicioUsuario;
-    private ServicioLibro servicioLibro;
     private ServicioPrestamo servicioPrestamo;
 
     public ControladorUsuario(PagedResourcesAssembler<Usuario> pagedResourcesAssembler,
@@ -50,7 +49,6 @@ public class ControladorUsuario {
     EnsambladorLibro ensambladorLibro,
     EnsambladorPrestamo ensambladorPrestamo,
     ServicioUsuario servicioUsuario, 
-    ServicioLibro servicioLibro,
     ServicioPrestamo servicioPrestamo) {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.pagedResourcesAssemblerLibro = pagedResourcesAssemblerLibro;
@@ -59,7 +57,6 @@ public class ControladorUsuario {
         this.ensambladorLibro = ensambladorLibro;
         this.ensambladorPrestamo = ensambladorPrestamo;
         this.servicioUsuario = servicioUsuario;
-        this.servicioLibro = servicioLibro;
         this.servicioPrestamo = servicioPrestamo;
     }
 
@@ -115,12 +112,19 @@ public class ControladorUsuario {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         }
+        catch(IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarUsuario(@PathVariable String id, @Valid @RequestBody Usuario user) {
+    public ResponseEntity<?> actualizarUsuario(@PathVariable String id, 
+    @Valid @RequestBody Usuario user) {
         try {
             Usuario actualizado = servicioUsuario.actualizarUsuario(id, user);
+            actualizado.add(linkTo(methodOn(ControladorUsuario.class)
+                .obtenerUsuarioPorId(id)).withSelfRel());
             return ResponseEntity.ok(actualizado);
         } 
         catch (NoSuchElementException e) {
@@ -166,16 +170,17 @@ public class ControladorUsuario {
             );
         }
         // Obtiene histórico de 5 préstamos
-        List<Prestamo> listaPrestamosHistoricos = servicioPrestamo.buscarPrestamosPorUsuario(usuario, false);
+        List<Prestamo> listaPrestamosHistoricos = servicioPrestamo
+        .buscarPrestamosPorUsuario(usuario, false);
         for (int i=0; 
         i < Math.min(listaPrestamosHistoricos.size(), 5); i++) {
-            // Obtiene y añade el préstamo actual
+            // Obtiene y añade el préstamo actual si es historico
             Prestamo prestamo = listaPrestamosHistoricos.get(i);
-            historicoPrestamos.add(EntityModel.of(
-                prestamo,      
-                linkTo(methodOn(ControladorUsuario.class).obtenerPrestamoPorId(id, prestamo.getId()))
-                    .withSelfRel())
-            );
+            if(prestamo.getFechaDevolucionReal() != null){
+                historicoPrestamos.add(EntityModel.of(
+                prestamo,linkTo(methodOn(ControladorUsuario.class)
+                    .obtenerPrestamoPorId(id, prestamo.getId())).withSelfRel()));
+            }
         }
         // Crea un DTO de actividad
         ActividadPrestamoDTO dto = new ActividadPrestamoDTO();
@@ -232,7 +237,7 @@ public class ControladorUsuario {
     // OBTENCIÓN DE PRÉSTAMOS ACTUALES CON FILTRO DE FECHAS
     @GetMapping(value = "/{id}/prestamos", produces = { "application/json", "application/xml" })
     public ResponseEntity<PagedModel<Prestamo>> obtenerPrestamos(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
             @RequestParam(defaultValue = "true") Boolean actual,
@@ -277,9 +282,15 @@ public class ControladorUsuario {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body("El préstamo no pertenece al usuario.");
         }
-
-        servicioPrestamo.eliminarPrestamo(prestamoId);
-        return ResponseEntity.noContent().build();
+        try{
+            servicioPrestamo.eliminarPrestamo(prestamoId);
+            return ResponseEntity.noContent().build();
+        }
+        catch(IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(Map.of("error", e.getMessage()));
+        }
+        
     }
 
     // AMPLIACIÓN DE UN PRÉSTAMO
@@ -292,6 +303,8 @@ public class ControladorUsuario {
         try {
             if(accion.getOperacion().equals("ampliar")) {
                 Prestamo prestamo = servicioPrestamo.ampliarPrestamo(prestamoId, usuarioId);
+                prestamo.add(linkTo(methodOn(ControladorUsuario.class)
+                .obtenerPrestamoPorId(usuarioId, prestamoId)).withSelfRel());
                 return ResponseEntity.ok(prestamo);
             }
             else if(accion.getOperacion().equals("devolver")){

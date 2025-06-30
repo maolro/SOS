@@ -111,7 +111,7 @@ public class ServicioPrestamo {
         repositorio.deleteById(id);
     }
 
-    public Page<Prestamo> buscarPrestamos(int page, int size, Long usuarioId, 
+    public Page<Prestamo> buscarPrestamos(int page, int size, String usuarioId, 
     String fechaInicioStr, String fechaFinStr, Boolean actual) {
         Pageable pageable = PageRequest.of(page, size);
 

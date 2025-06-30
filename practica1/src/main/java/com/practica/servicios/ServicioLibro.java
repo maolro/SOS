@@ -61,7 +61,7 @@ public class ServicioLibro {
             .orElseThrow(() -> new NullPointerException(
                 "No se ha encontrado el libro"));
         // Comprueba si el libro esta prestado
-        if(servicioPrestamo.buscarPrestamosPorLibro(libro, true).size() > 0){
+        if(servicioPrestamo.buscarPrestamosPorLibro(libro, false).size() > 0){
             throw new IllegalArgumentException(
                 "No se puede borrar un libro prestado");
         }

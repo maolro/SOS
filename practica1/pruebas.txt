@@ -2,7 +2,7 @@ SECUENCIA DE PRUEBAS
 
 PRUEBAS DE USUARIOS 
 
-- Crear un usuario -> 201 Created + JSON usuario
+-  -> 201 Created + JSON usuario
 
 {
   "nombreUsuario": "juanperez",
@@ -18,7 +18,7 @@ PRUEBAS DE USUARIOS
 - GET de un usuario -> 200 OK + JSON usuario
 - GET de un usuario inexistente -> 404 not found
 
-(Se crean 5 usuarios de prueba)
+(Se crean 2 usuarios de prueba)
 - GET de todos los usuarios -> 200 OK + JSON con paginacion y enlaces
 - GET de usuarios que empiezan por una letra -> 200 OK + JSON con paginacion y enlaces
 - GET de usuarios con page y size especifico -> 200 OK + JSON con paginacion y enlaces
@@ -115,7 +115,7 @@ PRUEBAS DE PRESTAMOS
 
 - Devolucion de un Prestamo antes de la fecha de devolucion (PUT de prestamo con fechaDevolucionReal) -> 200 OK y mensaje
 {
-  "operation": "devolver",
+  "operacion": "devolver",
   "fechaDevolucion": "2025-6-29"
 }
 - Devolucion de un Prestamo despues de la fecha de devolucion (PUT de prestamo con fechaDevolucionReal) -> 200 OK y mensaje

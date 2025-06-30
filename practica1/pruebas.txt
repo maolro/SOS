@@ -1,0 +1,131 @@
+SECUENCIA DE PRUEBAS
+
+PRUEBAS DE USUARIOS 
+
+- Crear un usuario -> 201 Created + JSON usuario
+
+{
+  "nombreUsuario": "juanperez",
+  "matricula": "1",
+  "fechaNacimiento": "1995-04-15",
+  "correoElectronico": "juan.perez@example.com"
+}
+
+- Usuario con matricula repetida -> 409 conflict
+- Usuario con fecha en formato invalido -> 400 bad request
+- Usuario con correo en formato invalido -> 400 bad request
+
+- GET de un usuario -> 200 OK + JSON usuario
+- GET de un usuario inexistente -> 404 not found
+
+(Se crean 5 usuarios de prueba)
+- GET de todos los usuarios -> 200 OK + JSON con paginacion y enlaces
+- GET de usuarios que empiezan por una letra -> 200 OK + JSON con paginacion y enlaces
+- GET de usuarios con page y size especifico -> 200 OK + JSON con paginacion y enlaces
+- GET de usuarios con filtro ademas de page y size especifico -> 200 OK + JSON con paginacion y enlaces
+- GET de usuarios con starts with invalido -> 400 bad request
+
+- Cambio de datos de un usuario -> 200 OK + JSON usuario
+- Se intenta cambiar un usuario que no existe -> 404 Not found
+- Cambio de numero de matricula -> 400 Bad request
+- Cambio a una fecha invalida -> 400 Bad request
+- Cambio a un correo en formato invalido -> 400 Bad request
+
+- Delete de un usuario -> 204 No content
+- Delete de un usuario que no existe -> 404 Not found
+- Delete de un usuario con prestamos -> 409 Conflict
+
+PRUEBAS DE LIBROS
+
+- Crear un libro -> 201 Created + JSON libro
+
+{
+  "titulo": "Cien años de soledad",
+  "autor": "Gabriel García Márquez",
+  "edicion": "1ª edición",
+  "isbn": "1",
+  "editorial": "Editorial Sudamericana",
+  "disponibles": 5
+}
+
+- Libro con disponibilidad invalida -> 400 bad request
+- Libro con ISBN repetido -> 409 conflict
+
+- GET de un libro -> 200 OK + JSON libro
+- GET de un libro inexistente -> 404 not found
+
+(Se crean 5 libros de prueba validos)
+- GET de todos los libros -> 200 OK + JSON con paginacion y enlaces
+- GET de libros filtados por patron -> 200 OK + JSON con paginacion y enlaces
+- GET de libros filtados por disponibilidad -> 200 OK + JSON con paginacion y enlaces
+- GET de libros filtados por disponibilidad y patron -> 200 OK + JSON con paginacion y enlaces
+- GET de usuarios con page y size especifico -> 200 OK + JSON con paginacion y enlaces
+
+- Cambio de datos de un libro -> 200 OK + JSON usuario
+- Se intenta cambiar un libro que no existe -> 404 Not found
+- Cambio a ISBN formato invalido -> 400 bad request
+- Cambio a disponibilidad invalida -> 400 bad request
+- Cambio a ISBN repetido -> 409 conflict
+
+- Delete de un libro -> 204 No content
+- Delete de un libro que no existe -> 404 Not found
+- Delete de un libro prestado -> 409 Conflict
+
+PRUEBAS DE PRESTAMOS
+
+- Crear un prestamo -> 201 Created + JSON Prestamo
+
+{
+  "libro_id": 1,
+  "fechaPrestamo": "2025-06-27"
+}
+
+- Un usuario inexistente intenta crear un Prestamo -> 404 not found
+- Un usuario sancionado crea un Prestamo -> 403 Forbidden
+- Crear un Prestamo con fecha en formato invalido -> 400 Bad request
+- Crear un prestamo de un libro inexistente -> 404 not found
+- Crear un prestamo de un libro no disponible -> 409 conflict
+- Crear un prestamo de un libro que ya ha pedido prestado -> 409 conflict
+
+- GET de un Prestamo -> 200 OK + JSON Prestamo
+- GET de un Prestamo inexistente -> 404 Not found
+- GET de un Prestamo para un usuario inexistente -> 404 Not found
+- GET de un Prestamo perteneciente al usuario equivocado -> 400 Bad Request
+
+(Se crean 5 prestamos actuales de prueba para un usuario, de los cuales 2 son actuales y 3 se han devuelto)
+- GET de todos los prestamos actuales de un usuario -> 200 OK + JSON con paginacion y enlaces
+- GET de todos los prestamos actuales de un usuario filtrados por periodo -> 200 OK + JSON con paginacion y enlaces
+- GET de todos los prestamos actuales de un usuario inexistente -> 404 Not found
+- GET de todos los prestamos actuales de un usuario filtrados por periodo con fechas invalidas -> 400 Bad Request
+
+- GET de todos los prestamos historicos de un usuario -> 200 OK + JSON con paginacion y enlaces
+- GET de todos los prestamos historicos de un usuario filtrados por periodo -> 200 OK + JSON con paginacion y enlaces
+- GET de todos los prestamos historicos de un usuario inexistente -> 404 Not found
+- GET de todos los prestamos historicos de un usuario filtrados por periodo con fechas invalidas -> 400 Bad Request
+
+- Ampliacion de un Prestamo (PUT de prestamo con ampliado=true) -> 200 OK y mensaje
+{
+  "operacion": "ampliar"
+}
+- Ampliacion de un Prestamo inexistente (PUT de prestamo con ampliado=true) -> 404 Not Found
+- Ampliacion de un Prestamo perteneciente a un usuario equivocado (PUT de prestamo con ampliado=true) -> 400 Bad Request
+- Ampliacion de un Prestamo devuelto -> 409 Conflict
+- Ampliacion de un Prestamo ya ampliado -> 409 Conflict
+- Ampliacion de un Prestamo vencido -> 409 Conflict
+
+- Devolucion de un Prestamo antes de la fecha de devolucion (PUT de prestamo con fechaDevolucionReal) -> 200 OK y mensaje
+{
+  "operation": "devolver",
+  "fechaDevolucion": "2025-6-29"
+}
+- Devolucion de un Prestamo despues de la fecha de devolucion (PUT de prestamo con fechaDevolucionReal) -> 200 OK y mensaje
+- Devolucion de un Prestamo inexistente (PUT de prestamo con fechaDevolucionReal) -> 404 Not Found
+- Devolucion de un Prestamo perteneciente a un usuario equivocado (PUT de prestamo con fechaDevolucionReal) -> 400 Bad Request
+- Devolucion de un Prestamo ya devuelto -> 409 Conflict
+
+PRUEBAS FINALES
+
+- GET de la actividad de un usuario -> 200 OK + JSON
+- GET de la actividad de un usuario inexistente -> 404 Not Found
+
+
